@@ -33,6 +33,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVarP(&opts.Color, "color", "c", "neutral", "Line color")
 	rootCmd.PersistentFlags().StringVarP(&opts.Level, "level", "l", "trace", "Log level")
+	rootCmd.PersistentFlags().StringVarP(&opts.Heading, "heading", "H", "", "Heading")
 	rootCmd.PersistentFlags().BoolVarP(&opts.Bold, "bold", "b", false, "Bold style")
 	rootCmd.PersistentFlags().BoolVarP(&opts.NoNewline, "no-newline", "n", false, "New line")
 	rootCmd.PersistentFlags().BoolVarP(&opts.ShortHeading, "short-headlines", "S", false, "Short headings")
