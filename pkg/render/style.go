@@ -13,7 +13,7 @@ var headings = map[string]string{
 	"failure": "👎",
 }
 
-var headingsShort = map[string]string{
+var headingShort = map[string]string{
 	"trace":   "",
 	"debug":   "[D]",
 	"info":    "[I]",
@@ -24,15 +24,23 @@ var headingsShort = map[string]string{
 	"failure": "👎",
 }
 
-var styles = map[string]*gchalk.Builder{
+//Default heading headingStyle
+var headingStyle = map[string]*gchalk.Builder{
 	"trace":   gchalk.WithBrightWhite(),
 	"debug":   gchalk.WithBrightWhite().WithBold(),
 	"info":    gchalk.WithBrightCyan().WithBold(),
 	"warn":    gchalk.WithBrightYellow().WithBold(),
 	"error":   gchalk.WithRed().WithBold(),
-	"fatal":   gchalk.WithBgBrightRed().WithBrightWhite().WithBold(),
+	"fatal":   gchalk.WithBrightRed().WithBold(),
 	"success": gchalk.WithBold(),
 	"failure": gchalk.WithBold(),
+}
+
+//Default body style modifiers
+var modifiers = map[string][]string{
+	"fatal":   {"bg-red", "bold", "white"},
+	"success": {"bold", "green"},
+	"failure": {"bold", "red"},
 }
 
 var styleMap = map[string]string{
