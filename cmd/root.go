@@ -9,11 +9,38 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "lgr",
-	Short: "pretty print output to console",
+	Use:   "lgr [text|stdin]",
+	Short: "Pretty print output to console",
 	Long:  "lgr helps you colorize your script output",
 	Example: `
 	lgr error 'This is an error message'
+	lgr -m bold -m underline -m bg-white -m magenta 'Hi there'
+	echo "command output..." | lgr info
+
+Styling:
+  To affect the printed output styling use
+  modifiers flags (-m,--modifier). You can use
+  multiple modifiers in a single invocation.
+
+  Style modifiers:
+	* bold            * overline
+	* dim             * reset
+	* hidden          * strikethrough
+	* inverse         * underline
+	* italic
+
+  Color modifiers:
+	* black           * magenta
+	* blue            * white
+	* cyan            * yellow
+	* green           * gray
+	* red             * grey
+
+  To set background color prepend "bg-" to any color
+  e.g. bg-red for a red background.
+
+  To use the bright version of a color prepend "hi-"
+  to any color e.g. hi-red for bright red.
 	`,
 	Args: cobra.MinimumNArgs(0),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
