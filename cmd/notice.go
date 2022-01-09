@@ -15,9 +15,9 @@ var successCmd = &cobra.Command{
 	Short:   "Show a success notice",
 	// Long:    generateLong("DEBUG", "D"),
 	Example: `
-  lgr success 'This is a debug message'
-  lgr D 'This is a debug message'
-  curl -v example.com | lgr debug
+  lgr success 'This is a successful message'
+  lgr ok 'This is a successful message'
+  curl -v example.com | lgr ok
 	`,
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -31,8 +31,9 @@ var failureCmd = &cobra.Command{
 	Short:   "Show a failure notice",
 	// Long:    generateLong("INFO", "I"),
 	Example: `
-	lgr info 'This is a debug message'
-	lgr I 'This is a debug message'
+	lgr failure 'This is a failed message'
+  lgr ko 'This is a failed message'
+  curl -v example.com | lgr ko
 	`,
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
