@@ -26,11 +26,19 @@ func init() {
 
 var barCmd = &cobra.Command{
 	Use:   "bar",
-	Short: "prints a progress bar",
-	Long: `bar will print a progress bar and update
-on subsequent calls.`,
-	Example: "lgr bar 10",
-	Args:    cobra.MinimumNArgs(1),
+	Short: "Prints a progress bar",
+	Long:  `Print a progress bar and update on subsequent calls.`,
+	Example: `
+  lgr bar 10
+  [█████#############################################] 10%
+
+  lgr bar 100
+  [██████████████████████████████████████████████████] 100%
+
+  lgr bar -B _ 20 -g »
+  [»»»»»»»»»»________________________________________] 20%
+	`,
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
 		i, _ := strconv.Atoi(args[0])
