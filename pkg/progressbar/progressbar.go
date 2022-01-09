@@ -16,6 +16,13 @@ type Options struct {
 	BarColors       *BarColors
 }
 
+const (
+	//DefaultGraphChar is default char for bar graphic
+	DefaultGraphChar string = "█"
+	//DefaultBackgroundChar is default char for bar background graphic
+	DefaultBackgroundChar string = "#"
+)
+
 //BarColors has color options for the bar
 type BarColors struct {
 	Graph   int
@@ -62,9 +69,7 @@ func Render(o *Options) error {
 	bar.PrintBar(o.Update)
 
 	if o.Update == o.Total {
-		if o.DoneNotice != "" {
-			bar.PrintEnd(o.DoneNotice)
-		}
+		bar.PrintEnd(o.DoneNotice)
 	}
 
 	return nil
