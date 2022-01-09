@@ -15,8 +15,9 @@ type Options struct {
 	Bold         bool
 	Level        string
 	Color        string
-	NoNewline    bool
+	Heading      string
 	ShortHeading bool
+	NoNewline    bool
 	Modifiers    *[]string
 }
 
@@ -24,14 +25,21 @@ type Options struct {
 func Print(body string, opts *Options) {
 	//Add heading
 	heading := headings[opts.Level]
+
 	if opts.ShortHeading {
 		heading = headingsShort[opts.Level]
 	}
+
+	if opts.Heading != "" {
+		heading = opts.Heading
+	}
+
 	if heading != "" {
 		style := styles[opts.Level]
 		heading = style.Paint(heading)
 		heading += " "
 	}
+
 	content := body
 
 	if ok, _ := readStdin(); ok {
