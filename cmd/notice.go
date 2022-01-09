@@ -21,13 +21,6 @@ var successCmd = &cobra.Command{
 	`,
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		if opts.Modifiers != nil && len(*opts.Modifiers) == 0 {
-			opts.Modifiers = &[]string{
-				"bold",
-				"green",
-			}
-		}
-
 		handleInput("success", args)
 	},
 }
@@ -43,12 +36,6 @@ var failureCmd = &cobra.Command{
 	`,
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		if opts.Modifiers != nil && len(*opts.Modifiers) == 0 {
-			opts.Modifiers = &[]string{
-				"bold",
-				"red",
-			}
-		}
 		handleInput("failure", args)
 	},
 }
