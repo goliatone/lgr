@@ -13,6 +13,16 @@ type Options struct {
 	HidePercent     bool
 	HideRatio       bool
 	HideProgressBar bool
+	BarColors       *BarColors
+}
+
+//BarColors has color options for the bar
+type BarColors struct {
+	Graph   int
+	Back    int
+	Ratio   int
+	Percent int
+	Notice  int
 }
 
 //Render will render the progress bar
@@ -36,13 +46,15 @@ func Render(o *Options) error {
 		bar.HideProgressBar()
 	}
 
-	bar.SetColor(goPrint.BarColor{
-		Graph:   32,
-		Back:    32,
-		Ratio:   32,
-		Percent: 32,
-		Notice:  32,
-	})
+	if o.BarColors != nil {
+		bar.SetColor(goPrint.BarColor{
+			Graph:   o.BarColors.Graph,
+			Back:    o.BarColors.Back,
+			Ratio:   o.BarColors.Ratio,
+			Percent: o.BarColors.Percent,
+			Notice:  o.BarColors.Notice,
+		})
+	}
 
 	bar.SetGraph(o.GraphChar)
 	bar.SetBackGraph(o.BackgroundChar)
