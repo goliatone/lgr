@@ -1,0 +1,318 @@
+#!/bin/bash
+
+if [[ $* == *-debug* ]]; then
+    set -x
+fi
+
+BINNAME="lgr"
+BINPATH=$(pwd)/"bin"
+VERSION_FILE=".version"
+PROJECT="$(awk 'match($0, /module (.*)/) {print substr($2, RSTART, RLENGTH)}' go.mod)"
+ENTRYPOINT="main.go"
+
+# If we have a .taskenv file load it as source
+# we can override the previous set of variables
+if [ -f .taskenv ]; then
+    # shellcheck disable=SC1091
+    source .taskenv
+fi
+
+# This will make all scripts available in the ./bin directory
+PATH=$(pwd)/bin:$PATH
+
+## ########################################
+##                 Test
+## ########################################
+
+## -----
+## dev:test
+##
+## Run go tests
+##
+function dev:test {
+    go test ./... -v
+}
+
+function wrk:dev {
+    gvm use go1.17
+    gvm pkgset use lgr
+}
+
+## ########################################
+##                 Build
+## ########################################
+
+## -----
+## release:build
+##
+## Install binary and service on host machine.
+## We can pass an env file with values that will
+## be available for the running service.
+##
+## Globals:
+##  PROJECT - $PROJECT
+##  BINNAME
+##  ENTRYPOINT
+##
+## Arguments:
+## @arg 1 {string} [tag=0.0.1]
+function release:build {
+    echo ""
+    echo "running release:build..."
+
+    VERSION=$(version:upsert $1)
+    BUILD_DATE=$(date -u +%Y%m%d.%H%M%S)
+    RELBIN="./bin/darwin"
+
+    mkdir -p ${RELBIN}
+
+    LDFLAGS="-s -w -X '${PROJECT}/pkg/version.Tag=${VERSION}' -X '${PROJECT}/pkg/version.Time=${BUILD_DATE}' -X '${PROJECT}/pkg/version.User=$(id -u -n)'"
+
+    echo "go build -ldflags ${LDFLAGS}"
+
+    go build -ldflags "${LDFLAGS}" -o "${RELBIN}/${BINNAME}" "${ENTRYPOINT}"
+}
+
+##
+## -----
+##
+## release
+##
+## Bump our current version, create a git tag
+## and push to trigger our release flow.
+##
+## Arguments:
+## @arg 1 {string} [level=patch]
+##        Accepted major, minor, patch
+function release {
+    local tag
+    local level
+    local message
+
+    level=${1:-"patch"}
+
+    # Bump our version
+    tag=$(version:bump "${level}")
+
+    # Set message: default to New major|minor|patch release: vx.x.x
+    message=${2:-"New ${level} release: v${tag}"}
+
+    # Update version file
+    version:set "${tag}"
+
+    # Add updated version file to git
+    git add "${VERSION_FILE}"
+    git commit -m "Bump version: v${tag}"
+
+    # Create a new tag
+    git tag -a "v${tag}" -m "${message}"
+
+    # Push tags and trigger release 🚀 🥳
+    git push --tags
+
+    git push
+}
+
+##
+## ########################################
+##           Version Management
+## ########################################
+
+##
+## -----
+##
+## version:upsert
+##
+## Save version to meta file.
+## First time will create file if not present
+##
+## Arguments:
+## @arg 1 {string} [tag=0.0.1]
+function version:upsert {
+    local tag=${1}
+
+    if [ -z "$tag" ]; then
+        version:get
+    else
+        version:set "$tag"
+        version:get
+    fi
+}
+
+##
+## -----
+##
+## version:get
+##
+## Get version from meta file.
+function version:get {
+
+    test -f ${VERSION_FILE} || touch ${VERSION_FILE}
+
+    local tag
+    tag=$(cat ${VERSION_FILE})
+
+    if [ -z "$tag" ]; then
+        tag="0.0.1"
+        version:set "$tag"
+    fi
+
+    echo -n "$tag"
+}
+
+##
+## -----
+##
+## version:set
+##
+## Set and save version to meta file.
+## First time will create file if not present.
+##
+## Arguments:
+## @arg 1 {string} [tag=0.0.1]
+function version:set {
+    local tag
+    tag=${1}
+    if [ -z "$tag" ]; then
+        exit 1
+    fi
+
+    echo -e "$tag" > "${VERSION_FILE}"
+}
+
+##
+## -----
+##
+## version:bump
+## Bump sem ver by specifying a level.
+## Valid levels are:
+## - patch (default)
+## - minor
+## - major
+##
+## @see https://github.com/fsaintjacques/semver-tool/blob/master/src/semver
+##
+## @arg 1 {string} [level=patch]
+## Outputs:
+##   Semver string "$major.$minor.$patch"
+function version:bump {
+    # Read contents of version and store in
+    IFS='.' read -ra identifiers < "$VERSION_FILE"
+
+    [[ "${#identifiers[@]}" -ne 3 ]] && echo "Invalid semver string" && return 1
+
+    #If we don't provide a second argument make patch increment
+    [[ "$#" -eq 0 ]] && level='patch' || level=$1
+
+    patch=${identifiers[2]}
+    minor=${identifiers[1]}
+    major=${identifiers[0]}
+
+    case $level in
+        patch)
+            patch=$((patch+1))
+        ;;
+        minor)
+            minor=$((minor+1))
+            patch=0
+        ;;
+        major)
+            major=$((major+1))
+            minor=0
+            patch=0
+        ;;
+        *)
+            echo "Invalid level passed"
+            return 2
+    esac
+
+    echo "$major.$minor.$patch"
+}
+
+##
+## ########################################
+##                CI/CD
+## ########################################
+
+##
+## -----
+##
+## ci:build
+##
+## Get version from meta file.
+function ci:build {
+    VERSION=$(version:get)
+    BUILD_DATE=$(date -u +%Y%m%d.%H%M%S)
+
+    LDFLAGS="-X '${PROJECT}/pkg/version.Tag=${VERSION}' -X '${PROJECT}/pkg/version.Time=${BUILD_DATE}' -X '${PROJECT}/pkg/version.User=$(id -u -n)'"
+
+    echo "building version: ${VERSION}"
+    echo "go build -ldflags ${LDFLAGS}"
+
+    go build -ldflags "${LDFLAGS}" -o "${BINPATH}/${BINNAME}" "${ENTRYPOINT}"
+}
+
+##
+## -----
+##
+## ci:test
+##
+## Get version from meta file.
+function ci:test {
+    # go env # debug
+    go install ${ENTRYPOINT}
+    go test ./... -v
+}
+
+##
+## -----
+##
+## ci:clean
+##
+## Get version from meta file.
+function ci:clean {
+    rm -f "${BINPATH}/${BINNAME}" || true
+}
+
+
+##
+## -----
+##
+## install:ubuntu
+##
+## Install Ubuntu binary from GitHub releases.
+function install:ubuntu {
+    tag=${1:-$(version:get)}
+    cd /tmp
+    wget https://github.com/goliatone/lgr/releases/download/v${tag}/lgr_${tag}_linux_x86_64.deb
+    sudo dpkg -i lgr_${tag}_linux_x86_64.deb
+    sleep 1
+    echo ""
+    echo $(lgr -v)
+    echo ""
+}
+
+##########################################
+# Help
+##########################################
+
+function help {
+    echo ""
+    echo "$0 <task> [...arguments]"
+    echo ""
+    echo "Project: ${PROJECT}"
+    echo ""
+
+    prog="$0"
+    me=$(basename "$prog")
+
+    grep -e '^##[[:space:]]' -e '^##$' "$prog" | sed -e 's/^##//' -e "s/_PROG_/$me/" 1>&2
+    echo ""
+    echo ""
+    echo "Tasks:"
+    compgen -A function | grep -v '^_' | cat -n
+    echo ""
+}
+
+TIMEFORMAT="Task completed in %3lR"
+time "${@:-help}"
