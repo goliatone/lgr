@@ -31,14 +31,14 @@ var opts *render.Options
 func init() {
 	opts = &render.Options{}
 
-	rootCmd.PersistentFlags().StringVarP(&opts.Color, "color", "c", "neutral", "Line color")
-	rootCmd.PersistentFlags().StringVarP(&opts.Level, "level", "l", "trace", "Log level")
-	rootCmd.PersistentFlags().StringVarP(&opts.Heading, "heading", "H", "", "Heading")
-	rootCmd.PersistentFlags().BoolVarP(&opts.Bold, "bold", "b", false, "Bold style")
-	rootCmd.PersistentFlags().BoolVarP(&opts.NoNewline, "no-newline", "n", false, "New line")
-	rootCmd.PersistentFlags().BoolVarP(&opts.ShortHeading, "short-headlines", "S", false, "Short headings")
+	rootCmd.PersistentFlags().StringVarP(&opts.Color, "color", "c", "neutral", "line color")
+	rootCmd.PersistentFlags().StringVarP(&opts.Level, "level", "l", "trace", "log level")
+	rootCmd.PersistentFlags().StringVarP(&opts.Heading, "heading", "H", "", "heading text")
+	rootCmd.PersistentFlags().BoolVarP(&opts.Bold, "bold", "b", false, "bold style")
+	rootCmd.PersistentFlags().BoolVarP(&opts.NoNewline, "no-newline", "n", false, "output not ended in newline")
+	rootCmd.PersistentFlags().BoolVarP(&opts.ShortHeading, "short-headlines", "S", false, "use short headings")
 
-	opts.Modifiers = rootCmd.PersistentFlags().StringSliceP("modifier", "m", []string{}, "Style modifier")
+	opts.Modifiers = rootCmd.PersistentFlags().StringSliceP("modifier", "m", []string{}, "list of style modifiers")
 
 }
 
