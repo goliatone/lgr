@@ -3,30 +3,36 @@ package render
 import "github.com/jwalton/gchalk"
 
 var headings = map[string]string{
-	"trace": "",
-	"debug": "[DEBUG]",
-	"info":  " [INFO]",
-	"warn":  " [WARN]",
-	"error": "[ERROR]",
-	"fatal": "[FATAL]",
+	"trace":   "",
+	"debug":   "[DEBUG]",
+	"info":    " [INFO]",
+	"warn":    " [WARN]",
+	"error":   "[ERROR]",
+	"fatal":   "[FATAL]",
+	"success": "👍",
+	"failure": "👎",
 }
 
 var headingsShort = map[string]string{
-	"trace": "",
-	"debug": "[D]",
-	"info":  "[I]",
-	"warn":  "[W]",
-	"error": "[E]",
-	"fatal": "[F]",
+	"trace":   "",
+	"debug":   "[D]",
+	"info":    "[I]",
+	"warn":    "[W]",
+	"error":   "[E]",
+	"fatal":   "[F]",
+	"success": "👍",
+	"failure": "👎",
 }
 
 var styles = map[string]*gchalk.Builder{
-	"trace": gchalk.WithBrightWhite(),
-	"debug": gchalk.WithBrightWhite().WithBold(),
-	"info":  gchalk.WithBrightCyan().WithBold(),
-	"warn":  gchalk.WithBrightYellow().WithBold(),
-	"error": gchalk.WithRed().WithBold(),
-	"fatal": gchalk.WithBgBrightRed().WithBrightWhite().WithBold(),
+	"trace":   gchalk.WithBrightWhite(),
+	"debug":   gchalk.WithBrightWhite().WithBold(),
+	"info":    gchalk.WithBrightCyan().WithBold(),
+	"warn":    gchalk.WithBrightYellow().WithBold(),
+	"error":   gchalk.WithRed().WithBold(),
+	"fatal":   gchalk.WithBgBrightRed().WithBrightWhite().WithBold(),
+	"success": gchalk.WithBold(),
+	"failure": gchalk.WithBold(),
 }
 
 var styleMap = map[string]string{
