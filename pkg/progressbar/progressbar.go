@@ -68,7 +68,7 @@ func Render(o *Options) error {
 
 	bar.PrintBar(o.Update)
 
-	if o.Update == o.Total {
+	if o.Update >= o.Total {
 		bar.PrintEnd(o.DoneNotice)
 	}
 

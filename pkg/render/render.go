@@ -26,7 +26,7 @@ func Print(body string, opts *Options) {
 	//Add heading
 	heading := headings[opts.Level]
 
-	if opts.ShortH eading {
+	if opts.ShortHeading {
 		heading = headingShort[opts.Level]
 	}
 
@@ -43,7 +43,7 @@ func Print(body string, opts *Options) {
 
 	content := body
 
-	if ok, _ := readStdin(); ok {
+	if ok, _ := checkInput(os.Stdin); ok {
 		if body != "" {
 			content += " "
 		}
@@ -83,9 +83,8 @@ func Print(body string, opts *Options) {
 	fmt.Printf("%s%s", heading, content)
 }
 
-func readStdin() (bool, error) {
-	pipe := os.Stdin
-	fi, err := pipe.Stat()
+func checkInput(f *os.File) (bool, error) {
+	fi, err := f.Stat()
 	if err != nil {
 		return false, fmt.Errorf("failed reading stdin: %w", err)
 	}
