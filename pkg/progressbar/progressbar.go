@@ -66,7 +66,12 @@ func Render(o *Options) error {
 	bar.SetGraph(o.GraphChar)
 	bar.SetBackGraph(o.BackgroundChar)
 
-	bar.PrintBar(o.Update)
+	u := o.Update
+	if u >= o.Total {
+		u = o.Total
+	}
+
+	bar.PrintBar(u)
 
 	if o.Update >= o.Total {
 		bar.PrintEnd(o.DoneNotice)
