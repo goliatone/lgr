@@ -47,7 +47,7 @@ brews:
     tap:
       owner: goliatone
       name: homebrew-tap
-    description: run commands in an environment defined using a ini configuration file.
+    description: pretty output for terminal scripts.
     homepage: https://github.com/goliatone/lgr
     license: "MIT"
     test: |
@@ -59,7 +59,7 @@ nfpms:
       amd64: x86_64
     bindir: /usr/local/bin/
     maintainer: goliatone <lgr@goliat.one>
-    description: run commands in an environment defined using a ini configuration file.
+    description: pretty output for terminal scripts.
     homepage: https://github.com/goliatone/lgr
     license: "MIT"
     formats:
