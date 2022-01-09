@@ -1,4 +1,4 @@
-name: Release lgr
+name: "Release lgr"
 on:
   push:
     tags:
