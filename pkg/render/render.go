@@ -26,8 +26,8 @@ func Print(body string, opts *Options) {
 	//Add heading
 	heading := headings[opts.Level]
 
-	if opts.ShortHeading {
-		heading = headingsShort[opts.Level]
+	if opts.ShortH eading {
+		heading = headingShort[opts.Level]
 	}
 
 	if opts.Heading != "" {
@@ -35,9 +35,10 @@ func Print(body string, opts *Options) {
 	}
 
 	if heading != "" {
-		style := styles[opts.Level]
-		heading = style.Paint(heading)
-		heading += " "
+		if style, ok := headingStyle[opts.Level]; ok {
+			heading = style.Paint(heading)
+			heading += " "
+		}
 	}
 
 	content := body
@@ -54,9 +55,13 @@ func Print(body string, opts *Options) {
 	if opts.Modifiers != nil && len(*opts.Modifiers) > 0 {
 		m := normalizeStyles(*opts.Modifiers...)
 		style, err = style.WithStyle(m...)
+	} else if mods, ok := modifiers[opts.Level]; ok {
+		m := normalizeStyles(mods...)
+		style, err = style.WithStyle(m...)
 	}
 
 	if err != nil {
+		//TODO: check for tty theme
 		style = gchalk.WithBrightWhite()
 	}
 
