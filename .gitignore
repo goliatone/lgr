@@ -76,4 +76,8 @@ Temporary Items
 *.msm
 *.msp
 
+TODO.md
+
+.tmp
+bin/*
 .vscode
