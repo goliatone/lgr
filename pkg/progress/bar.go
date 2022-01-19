@@ -1,4 +1,4 @@
-package progressbar
+package progress
 
 import "github.com/redmask-hb/GoSimplePrint/goPrint"
 
@@ -32,8 +32,9 @@ type BarColors struct {
 	Notice  int
 }
 
-//Render will render the progress bar
-func Render(o *Options) error {
+//Bar will render the progress bar
+//TODO: move to widgets
+func Bar(o *Options) error {
 
 	bar := goPrint.NewBar(o.Total)
 
