@@ -41,6 +41,10 @@ Styling:
 
   To use the bright version of a color prepend "hi-"
   to any color e.g. hi-red for bright red.
+
+  Disable color:
+    * NO_COLOR:   Set the environment variable
+	* --no-color: Set the global flag
 	`,
 	Args: cobra.MinimumNArgs(0),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -62,11 +66,11 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&opts.Level, "level", "l", "trace", "log level")
 	rootCmd.PersistentFlags().StringVarP(&opts.Heading, "heading", "H", "", "heading text")
 	rootCmd.PersistentFlags().BoolVarP(&opts.Bold, "bold", "b", false, "bold style")
+	rootCmd.PersistentFlags().BoolVar(&opts.NoColor, "no-color", false, "disable color output")
 	rootCmd.PersistentFlags().BoolVarP(&opts.NoNewline, "no-newline", "n", false, "output not ended in newline")
 	rootCmd.PersistentFlags().BoolVarP(&opts.ShortHeading, "short-headlines", "S", false, "use short headings")
 
 	opts.Modifiers = rootCmd.PersistentFlags().StringSliceP("modifier", "m", []string{}, "list of style modifiers")
-
 }
 
 //Execute exposes the root command execute method
