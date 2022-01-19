@@ -193,7 +193,13 @@ func longestLine(lines []string) textLines {
 			len:  l,
 			text: line,
 		})
+
 		if l > t.longest {
+			//we always want the longest line to be even so that
+			//padding works
+			if l%2 != 0 {
+				l++
+			}
 			t.longest = l
 		}
 	}
@@ -214,9 +220,11 @@ func (b Box) getText(length int, lines textLines) []string {
 		plen := (length - line.len) / 2
 		rpad := strings.Repeat(" ", plen)
 		lpad := rpad
+
 		if line.len%2 != 0 {
 			lpad += " "
 		}
+
 		text := sep + rpad + line.text + lpad + sep
 
 		s = append(s, text)
