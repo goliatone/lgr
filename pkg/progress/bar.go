@@ -33,6 +33,7 @@ type BarColors struct {
 }
 
 //Bar will render the progress bar
+//TODO: move to widgets
 func Bar(o *Options) error {
 
 	bar := goPrint.NewBar(o.Total)
