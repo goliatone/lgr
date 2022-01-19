@@ -20,8 +20,8 @@ var headingShort = map[string]string{
 	"warn":    "[W]",
 	"error":   "[E]",
 	"fatal":   "[F]",
-	"success": "👍",
-	"failure": "👎",
+	"success": "✔",
+	"failure": "✖",
 }
 
 //Default heading headingStyle
