@@ -15,11 +15,15 @@ func init() {
 }
 
 var shortHeadings = map[string]struct{}{
-	"D": {},
-	"I": {},
-	"W": {},
-	"E": {},
-	"F": {},
+	"D":  {},
+	"I":  {},
+	"W":  {},
+	"E":  {},
+	"F":  {},
+	"ok": {},
+	"OK": {},
+	"ko": {},
+	"KO": {},
 }
 
 var debugCmd = &cobra.Command{

@@ -13,6 +13,7 @@ type boxOptions struct {
 	Alignment string
 	Hpad      int
 	Vpad      int
+	ScreenW   int
 }
 
 var bo *boxOptions
@@ -25,6 +26,7 @@ func init() {
 	boxCmd.Flags().StringVarP(&bo.Alignment, "alignment", "a", "center", "Box screen alignment: right, center, left.")
 	boxCmd.Flags().IntVar(&bo.Hpad, "h-pad", 3, "Horizontal padding.")
 	boxCmd.Flags().IntVar(&bo.Vpad, "v-pad", 2, "Vertical padding.")
+	boxCmd.Flags().IntVar(&bo.ScreenW, "columns", 80, "Screen colum width e.g $COLUMNS.")
 
 	rootCmd.AddCommand(boxCmd)
 }
@@ -36,19 +38,21 @@ var boxCmd = &cobra.Command{
 	Example: `
 
 	`,
-	Args: cobra.MinimumNArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		width, _, err := term.GetSize(0)
-		if err != nil {
-			return err
+	// Args: cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		if bo.ScreenW == 0 && term.IsTerminal(0) {
+			bo.ScreenW, _, err = term.GetSize(0)
+			if err != nil {
+				return fmt.Errorf("run command: %w", err)
+			}
 		}
 
 		b := widgets.Box{
-			Content:   args[0],
+			Content:   getBody(args),
 			Style:     bo.Style,
 			Hpad:      bo.Hpad,
 			Vpad:      bo.Vpad,
-			ScreenW:   width,
+			ScreenW:   bo.ScreenW,
 			Alignment: bo.Alignment,
 		}
 
