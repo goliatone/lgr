@@ -9,8 +9,8 @@ var headings = map[string]string{
 	"warn":    " [WARN]",
 	"error":   "[ERROR]",
 	"fatal":   "[FATAL]",
-	"success": "👍",
-	"failure": "👎",
+	"success": " 👍",
+	"failure": " 👎",
 }
 
 var headingShort = map[string]string{
@@ -20,8 +20,8 @@ var headingShort = map[string]string{
 	"warn":    "[W]",
 	"error":   "[E]",
 	"fatal":   "[F]",
-	"success": "✔",
-	"failure": "✖",
+	"success": "[✔]",
+	"failure": "[✖]",
 }
 
 //Default heading headingStyle
@@ -32,8 +32,8 @@ var headingStyle = map[string]*gchalk.Builder{
 	"warn":    gchalk.WithBrightYellow().WithBold(),
 	"error":   gchalk.WithRed().WithBold(),
 	"fatal":   gchalk.WithBrightRed().WithBold(),
-	"success": gchalk.WithBold(),
-	"failure": gchalk.WithBold(),
+	"success": gchalk.WithGreen().WithBold(),
+	"failure": gchalk.WithRed().WithBold(),
 }
 
 //Default body style modifiers
