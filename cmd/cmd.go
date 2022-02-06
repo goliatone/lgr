@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -60,10 +61,34 @@ failure message.
 
 		s.Stop()
 		handleInput("success", []string{"success " + label})
+
 		opts.HeadingPrefix = " └─"
-		handleInput("info", []string{out.String()})
-		// fmt.Printf("output: %q\n", out.String())
+
+		b := []string{}
+		lines := strings.Split(strings.TrimRight(out.String(), "\n"), "\n")
+		lineDigits := countDigits(len(lines))
+		// linePadding := 8 - lineDigits
+		for i, l := range lines {
+			if i == 0 {
+				// b = append(b, l)
+				// b = append(b, fmt.Sprintf("%-*s %d", lineDigits+1, l, lineDigits+1))
+				b = append(b, fmt.Sprintf("%s%s %d", fmt.Sprintf("%*s", lineDigits-1, ""), l, lineDigits-1))
+			} else {
+				b = append(b, fmt.Sprintf("   [%0*d] %s", lineDigits, i, l))
+				// b = append(b, fmt.Sprintf("%-*s %s", linePadding, fmt.Sprintf("[%0*d]", lineDigits, i), l))
+			}
+
+		}
+
+		handleInput("info", []string{strings.Join(b, "\n")})
 	},
+}
+
+func countDigits(i int) int {
+	if i < 10 {
+		return 1
+	}
+	return 1 + countDigits(i/10)
 }
 
 func makeExecParams(args []string) (string, []string) {
