@@ -33,7 +33,7 @@ failure message.
 
 		opts.ShortHeading = true
 
-		label := "executing " + strings.Join(args, " ")
+		label := "executing: " + strings.Join(args, " ")
 
 		name, params := makeExecParams(args)
 		run := exec.Command(name, params...)
@@ -41,10 +41,11 @@ failure message.
 
 		var out bytes.Buffer
 		run.Stdout = &out
+		run.Stderr = &out
 
 		s := widgets.NewSpinner(label)
 
-		s.Frames = widgets.FramesBarsVertical
+		s.Frames = widgets.FramesBarHorizontal
 		s.Output = os.Stdout
 
 		s.Start()
@@ -54,34 +55,47 @@ failure message.
 		if err != nil {
 			s.Stop()
 			handleInput("failure", []string{"error " + label})
-			opts.HeadingPrefix = " └─"
-			handleInput("error", []string{err.Error()})
+
+			opts.WithIndent()
+			content := indentOutput(err.Error() + "\n" + out.String())
+			handleInput("error", []string{content})
+
+			if exitError, ok := err.(*exec.ExitError); ok {
+				os.Exit(exitError.ExitCode())
+			}
 			return
 		}
 
 		s.Stop()
+
 		handleInput("success", []string{"success " + label})
 
-		opts.HeadingPrefix = " └─"
-
-		b := []string{}
-		lines := strings.Split(strings.TrimRight(out.String(), "\n"), "\n")
-		lineDigits := countDigits(len(lines))
-		// linePadding := 8 - lineDigits
-		for i, l := range lines {
-			if i == 0 {
-				// b = append(b, l)
-				// b = append(b, fmt.Sprintf("%-*s %d", lineDigits+1, l, lineDigits+1))
-				b = append(b, fmt.Sprintf("%s%s %d", fmt.Sprintf("%*s", lineDigits-1, ""), l, lineDigits-1))
-			} else {
-				b = append(b, fmt.Sprintf("   [%0*d] %s", lineDigits, i, l))
-				// b = append(b, fmt.Sprintf("%-*s %s", linePadding, fmt.Sprintf("[%0*d]", lineDigits, i), l))
-			}
-
-		}
-
-		handleInput("info", []string{strings.Join(b, "\n")})
+		opts.WithIndent()
+		content := indentOutput(out.String())
+		handleInput("info", []string{content})
 	},
+}
+
+func makeExecParams(args []string) (string, []string) {
+	return args[0], args[1:]
+}
+
+func indentOutput(input string) string {
+	out := []string{}
+
+	lines := strings.Split(strings.TrimRight(input, "\n"), "\n")
+
+	lineDigits := countDigits(len(lines))
+	for i, l := range lines {
+		l = strings.TrimLeft(l, " ")
+		if i == 0 {
+			out = append(out, fmt.Sprintf("%s%s", fmt.Sprintf("%*s", lineDigits-1, ""), l))
+		} else {
+			out = append(out, fmt.Sprintf("   [%0*d] %s", lineDigits, i, l))
+		}
+	}
+
+	return strings.Join(out, "\n")
 }
 
 func countDigits(i int) int {
@@ -89,8 +103,4 @@ func countDigits(i int) int {
 		return 1
 	}
 	return 1 + countDigits(i/10)
-}
-
-func makeExecParams(args []string) (string, []string) {
-	return args[0], args[1:]
 }
