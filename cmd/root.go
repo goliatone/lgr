@@ -57,6 +57,7 @@ Styling:
 	},
 }
 
+var errorExitCode = 1
 var opts *render.Options
 
 func init() {
@@ -77,7 +78,7 @@ func init() {
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		os.Exit(errorExitCode)
 	}
 }
 
