@@ -1,5 +1,6 @@
 package widgets
 
+//TODO: move to widget/box package
 import (
 	"strings"
 

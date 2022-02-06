@@ -12,16 +12,22 @@ import (
 
 //Options holds print modifiers
 type Options struct {
-	Bold         bool
-	Level        string
-	Color        string
-	NoColor      bool
-	Heading      string
-	ShortHeading bool
-	NoNewline    bool
-	Modifiers    *[]string
+	Bold          bool
+	Level         string
+	Color         string
+	NoColor       bool
+	Heading       string
+	ShortHeading  bool
+	HeadingPrefix string
+	NoNewline     bool
+	Modifiers     *[]string
 }
 
+func (o *Options) WithIndent() {
+	o.HeadingPrefix = " └─"
+}
+
+//Stylize will add stile to your body
 func Stylize(body string, opts *Options) (string, string) {
 	//Add heading
 	heading := headings[opts.Level]
@@ -38,6 +44,10 @@ func Stylize(body string, opts *Options) (string, string) {
 		if style, ok := headingStyle[opts.Level]; ok {
 			heading = style.Paint(heading)
 			heading += " "
+		}
+
+		if opts.HeadingPrefix != "" {
+			heading = opts.HeadingPrefix + heading
 		}
 	}
 
@@ -88,6 +98,7 @@ func Print(body string, opts *Options) {
 	heading, content := Stylize(body, opts)
 	//TODO: use writer
 	// fmt.Fprint(w io.Writer, a ...interface{})
+
 	fmt.Printf("%s%s", heading, content)
 }
 
