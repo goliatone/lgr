@@ -23,6 +23,10 @@ type Options struct {
 	Modifiers     *[]string
 }
 
+func (o *Options) WithIndent() {
+	o.HeadingPrefix = " └─"
+}
+
 //Stylize will add stile to your body
 func Stylize(body string, opts *Options) (string, string) {
 	//Add heading
