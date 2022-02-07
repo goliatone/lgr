@@ -48,6 +48,7 @@ type Spinner struct {
 	Output     io.Writer
 	active     bool
 	Style      *gchalk.Builder
+	MaxWidth   int
 	HideCursor bool
 }
 
@@ -147,11 +148,19 @@ func (s *Spinner) animate() {
 			frame = style.Paint(frame)
 		}
 
-		out = fmt.Sprintf("\r%s %s", frame, s.Label)
+		label := clipString(s.Label, s.MaxWidth)
+		out = fmt.Sprintf("\r%s %s", frame, label)
 
 		fmt.Fprint(s.Output, out)
 
 		time.Sleep(s.FrameRate)
 		s.clearOutput()
 	}
+}
+
+func clipString(str string, width int) string {
+	if len(str) < width {
+		return str
+	}
+	return str[0:width-3] + "..."
 }
