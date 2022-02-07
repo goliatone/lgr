@@ -9,6 +9,7 @@ import (
 
 	"github.com/goliatone/lgr/pkg/widgets"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 func init() {
@@ -31,7 +32,7 @@ failure message.
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 
-		opts.ShortHeading = true
+		opts.ShortHeading = false
 
 		label := "executing: " + strings.Join(args, " ")
 
@@ -42,9 +43,8 @@ failure message.
 		var out bytes.Buffer
 		run.Stdout = &out
 		run.Stderr = &out
-
 		s := widgets.NewSpinner(label)
-
+		s.MaxWidth = getMaxScreenWidth(3)
 		s.Frames = widgets.FramesBarHorizontal
 		s.Output = os.Stdout
 
@@ -57,7 +57,7 @@ failure message.
 			handleInput("failure", []string{"error " + label})
 
 			opts.WithIndent()
-			content := indentOutput(err.Error() + "\n" + out.String())
+			content := indentOutput(err.Error()+"\n"+out.String(), opts.ShortHeading)
 			handleInput("error", []string{content})
 
 			if exitError, ok := err.(*exec.ExitError); ok {
@@ -70,17 +70,28 @@ failure message.
 
 		handleInput("success", []string{"success " + label})
 
+		content := indentOutput(out.String(), opts.ShortHeading)
+
+		if content == "" {
+			return
+		}
 		opts.WithIndent()
-		content := indentOutput(out.String())
 		handleInput("info", []string{content})
 	},
 }
 
 func makeExecParams(args []string) (string, []string) {
+
 	return args[0], args[1:]
 }
 
-func indentOutput(input string) string {
+func indentOutput(input string, short bool) string {
+	indentLength := 7
+	if short {
+		indentLength = 3
+	}
+	indent := fmt.Sprintf("%*s", indentLength, "")
+
 	out := []string{}
 
 	lines := strings.Split(strings.TrimRight(input, "\n"), "\n")
@@ -91,7 +102,8 @@ func indentOutput(input string) string {
 		if i == 0 {
 			out = append(out, fmt.Sprintf("%s%s", fmt.Sprintf("%*s", lineDigits-1, ""), l))
 		} else {
-			out = append(out, fmt.Sprintf("   [%0*d] %s", lineDigits, i, l))
+			// out = append(out, fmt.Sprintf("   [%0*d] %s", lineDigits, i, l))
+			out = append(out, fmt.Sprintf("%s[%0*d] %s", indent, lineDigits, i, l))
 		}
 	}
 
@@ -103,4 +115,14 @@ func countDigits(i int) int {
 		return 1
 	}
 	return 1 + countDigits(i/10)
+}
+
+func getMaxScreenWidth(padding int) int {
+	maxLineWidth := 80
+
+	if term.IsTerminal(0) {
+		maxLineWidth, _, _ = term.GetSize(0)
+	}
+
+	return maxLineWidth - padding
 }
