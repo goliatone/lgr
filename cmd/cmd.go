@@ -75,6 +75,7 @@ failure message.
 		if content == "" {
 			return
 		}
+
 		opts.WithIndent()
 		handleInput("info", []string{content})
 	},
