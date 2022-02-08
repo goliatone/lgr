@@ -7,19 +7,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var widget *bar.Widget
+var barWidget *bar.Widget
 
 func init() {
-	widget = bar.NewWithDefaults()
+	barWidget = bar.NewWithDefaults()
 
-	barCmd.Flags().IntVarP(&widget.Total, "total", "t", 100, "Total to calculate progress.")
-	barCmd.Flags().StringVarP(&widget.Title, "title", "T", "", "Title shown next to bar.")
-	barCmd.Flags().StringVarP(&widget.DoneNotice, "done", "d", "", "Message shown on completion.")
-	barCmd.Flags().StringVarP(&widget.GraphChar, "graph", "g", bar.DefaultGraphChar, "Character used to draw bar.")
-	barCmd.Flags().StringVarP(&widget.BackgroundChar, "back", "B", bar.DefaultBackgroundChar, "Character used to draw bar background.")
-	barCmd.Flags().BoolVarP(&widget.HidePercent, "percent", "p", false, "Hides the progress percent.")
-	barCmd.Flags().BoolVarP(&widget.HideRatio, "ratio", "r", true, "Hides the progress ratio.")
-	barCmd.Flags().BoolVar(&widget.HideProgressBar, "bar", false, "Hides the progress bar.")
+	barCmd.Flags().IntVarP(&barWidget.Total, "total", "t", 100, "Total to calculate progress.")
+	barCmd.Flags().StringVarP(&barWidget.Title, "title", "T", "", "Title shown next to bar.")
+	barCmd.Flags().StringVarP(&barWidget.DoneNotice, "done", "d", "", "Message shown on completion.")
+	barCmd.Flags().StringVarP(&barWidget.GraphChar, "graph", "g", bar.DefaultGraphChar, "Character used to draw bar.")
+	barCmd.Flags().StringVarP(&barWidget.BackgroundChar, "back", "B", bar.DefaultBackgroundChar, "Character used to draw bar background.")
+	barCmd.Flags().BoolVarP(&barWidget.HidePercent, "percent", "p", false, "Hides the progress percent.")
+	barCmd.Flags().BoolVarP(&barWidget.HideRatio, "ratio", "r", true, "Hides the progress ratio.")
+	barCmd.Flags().BoolVar(&barWidget.HideProgressBar, "bar", false, "Hides the progress bar.")
 
 	rootCmd.AddCommand(barCmd)
 }
@@ -46,7 +46,8 @@ var barCmd = &cobra.Command{
 			return err
 		}
 
-		widget.SetUpdate(i).Render()
+		barWidget.SetUpdate(i).Render()
+
 		return nil
 	},
 }
