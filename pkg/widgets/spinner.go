@@ -149,7 +149,7 @@ func (s *Spinner) animate() {
 		}
 
 		label := clipString(s.Label, s.MaxWidth)
-		out = fmt.Sprintf("\r%s %s", frame, label)
+		out = fmt.Sprintf("\r %s %s", frame, label)
 
 		fmt.Fprint(s.Output, out)
 
@@ -162,5 +162,5 @@ func clipString(str string, width int) string {
 	if len(str) < width {
 		return str
 	}
-	return str[0:width-3] + "..."
+	return str[0:width-4] + "..."
 }
