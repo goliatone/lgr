@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/goliatone/lgr/pkg/widgets"
+	"github.com/goliatone/lgr/pkg/widgets/spinner"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -32,7 +32,7 @@ failure message.
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 
-		opts.ShortHeading = false
+		opts.ShortHeading = true
 
 		label := "executing: " + strings.Join(args, " ")
 
@@ -43,17 +43,20 @@ failure message.
 		var out bytes.Buffer
 		run.Stdout = &out
 		run.Stderr = &out
-		s := widgets.NewSpinner(label)
-		s.MaxWidth = getMaxScreenWidth(3)
-		s.Frames = widgets.FramesBarHorizontal
-		s.Output = os.Stdout
+		//TODO: make configurable via flags
+		widget := spinner.New(
+			spinner.WithLabel(label),
+			spinner.WithMaxWidth(getMaxScreenWidth(3)),
+			spinner.WithFrames(spinner.FramesBarHorizontal),
+			spinner.WithOutput(os.Stdout),
+		)
 
-		s.Start()
+		widget.Start()
 
 		err := run.Run()
 
 		if err != nil {
-			s.Stop()
+			widget.Stop()
 			handleInput("failure", []string{"error " + label})
 
 			opts.WithIndent()
@@ -66,7 +69,7 @@ failure message.
 			return
 		}
 
-		s.Stop()
+		widget.Stop()
 
 		handleInput("success", []string{"success " + label})
 
@@ -87,7 +90,7 @@ func makeExecParams(args []string) (string, []string) {
 }
 
 func indentOutput(input string, short bool) string {
-	indentLength := 7
+	indentLength := 6
 	if short {
 		indentLength = 3
 	}
