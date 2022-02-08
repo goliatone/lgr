@@ -3,23 +3,23 @@ package cmd
 import (
 	"strconv"
 
-	"github.com/goliatone/lgr/pkg/progress"
+	"github.com/goliatone/lgr/pkg/widgets/bar"
 	"github.com/spf13/cobra"
 )
 
-var po *progress.Options
+var widget *bar.Widget
 
 func init() {
-	po = progress.DefaultOptions()
+	widget = bar.NewWithDefaults()
 
-	barCmd.Flags().IntVarP(&po.Total, "total", "t", 100, "Total to calculate progress.")
-	barCmd.Flags().StringVarP(&po.Title, "title", "T", "", "Title shown next to bar.")
-	barCmd.Flags().StringVarP(&po.DoneNotice, "done", "d", "", "Message shown on completion.")
-	barCmd.Flags().StringVarP(&po.GraphChar, "graph", "g", progress.DefaultGraphChar, "Character used to draw bar.")
-	barCmd.Flags().StringVarP(&po.BackgroundChar, "back", "B", progress.DefaultBackgroundChar, "Character used to draw bar background.")
-	barCmd.Flags().BoolVarP(&po.HidePercent, "percent", "p", false, "Hides the progress percent.")
-	barCmd.Flags().BoolVarP(&po.HideRatio, "ratio", "r", true, "Hides the progress ratio.")
-	barCmd.Flags().BoolVar(&po.HideProgressBar, "bar", false, "Hides the progress bar.")
+	barCmd.Flags().IntVarP(&widget.Total, "total", "t", 100, "Total to calculate progress.")
+	barCmd.Flags().StringVarP(&widget.Title, "title", "T", "", "Title shown next to bar.")
+	barCmd.Flags().StringVarP(&widget.DoneNotice, "done", "d", "", "Message shown on completion.")
+	barCmd.Flags().StringVarP(&widget.GraphChar, "graph", "g", bar.DefaultGraphChar, "Character used to draw bar.")
+	barCmd.Flags().StringVarP(&widget.BackgroundChar, "back", "B", bar.DefaultBackgroundChar, "Character used to draw bar background.")
+	barCmd.Flags().BoolVarP(&widget.HidePercent, "percent", "p", false, "Hides the progress percent.")
+	barCmd.Flags().BoolVarP(&widget.HideRatio, "ratio", "r", true, "Hides the progress ratio.")
+	barCmd.Flags().BoolVar(&widget.HideProgressBar, "bar", false, "Hides the progress bar.")
 
 	rootCmd.AddCommand(barCmd)
 }
@@ -39,13 +39,14 @@ var barCmd = &cobra.Command{
   [»»»»»»»»»»________________________________________] 20%
 	`,
 	Args: cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 
-		i, _ := strconv.Atoi(args[0])
-		//TODO: handle error...
+		i, err := strconv.Atoi(args[0])
+		if err != nil {
+			return err
+		}
 
-		po.Update = i
-
-		progress.Bar(po)
+		widget.SetUpdate(i).Render()
+		return nil
 	},
 }
