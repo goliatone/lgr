@@ -87,6 +87,9 @@ func handleInput(level string, args []string) {
 	//TODO: check if no body and no stdin then show usage?
 	body := getBody(args)
 	render.Print(body, opts)
+	if opts.Level == "fatal" {
+		os.Exit(errorExitCode)
+	}
 }
 
 func getBody(args []string) string {

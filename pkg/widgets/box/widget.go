@@ -1,16 +1,16 @@
-package widgets
+package box
 
-//TODO: move to widget/box package
 import (
+	"fmt"
 	"strings"
 
 	"github.com/jwalton/gchalk"
 )
 
-const defaultStyle = "single"
+const defaultTemplate = "single"
 
-//BoxStyle holds box style
-type BoxStyle struct {
+//Template holds box style
+type Template struct {
 	TopLeft     string
 	Horizontal  string
 	TopRight    string
@@ -19,8 +19,9 @@ type BoxStyle struct {
 	BottomLeft  string
 }
 
-func BoxStyleFromChar(char string) BoxStyle {
-	return BoxStyle{
+//TemplateFromChar generates a template from a single character
+func TemplateFromChar(char string) Template {
+	return Template{
 		TopRight:    char,
 		TopLeft:     char,
 		BottomRight: char,
@@ -30,14 +31,14 @@ func BoxStyleFromChar(char string) BoxStyle {
 	}
 }
 
-//Box holds box info
-type Box struct {
+//Widget holds box info
+type Widget struct {
 	Width     int
 	MaxWidth  int
 	Height    int
 	Title     string
 	Content   string
-	Style     string
+	Template  string
 	Hpad      int
 	Vpad      int
 	ScreenW   int
@@ -45,71 +46,42 @@ type Box struct {
 	Alignment string
 }
 
-var (
-	boxStyles map[string]BoxStyle = map[string]BoxStyle{
-		"single": {
-			TopRight:    "┐",
-			TopLeft:     "┌",
-			BottomRight: "┘",
-			BottomLeft:  "└",
-			Horizontal:  "─",
-			Vertical:    "│",
-		},
-		"double": {
-			TopRight:    "╗",
-			TopLeft:     "╔",
-			BottomRight: "╝",
-			BottomLeft:  "╚",
-			Horizontal:  "═",
-			Vertical:    "║",
-		},
-		"round": {
-			TopRight:    "╮",
-			TopLeft:     "╭",
-			BottomRight: "╯",
-			BottomLeft:  "╰",
-			Horizontal:  "─",
-			Vertical:    "│",
-		},
-		"x": {
-			TopRight:    "+",
-			TopLeft:     "+",
-			BottomRight: "+",
-			BottomLeft:  "+",
-			Horizontal:  " ",
-			Vertical:    " ",
-		},
-		"classic": {
-			TopRight:    "+",
-			TopLeft:     "+",
-			BottomRight: "+",
-			BottomLeft:  "+",
-			Horizontal:  "-",
-			Vertical:    "|",
-		},
+//New creates a new Widget instance
+func New(options ...Option) *Widget {
+	w := &Widget{}
+	for _, option := range options {
+		option(w)
 	}
+	return w
+}
 
-	boxStyleAlias map[string]string = map[string]string{
-		"rounded": "round",
-	}
-)
+//SetContent updates content
+func (w *Widget) SetContent(content string) *Widget {
+	w.Content = content
+	return w
+}
 
-func (b Box) String() string {
-	style := b.getStyle()
+//Render will render the widget
+func (w *Widget) Render() {
+	fmt.Println(w.String())
+}
 
-	lines := strings.Split(b.Content, "\\n")
+func (w *Widget) String() string {
+	style := w.getTemplate()
+
+	lines := strings.Split(w.Content, "\\n")
 	linesInfo := longestLine(lines)
 
-	l := linesInfo.longest + 2 + (b.Hpad * 2)
+	l := linesInfo.longest + 2 + (w.Hpad * 2)
 
 	bar := strings.Repeat(style.Horizontal, l)
 	tbar := style.TopLeft + bar + style.TopRight
 	bbar := style.BottomLeft + bar + style.BottomRight
 
-	padding := b.getVerticalPadding(l)
-	hpadding := b.getHorizontalPadding(l)
+	padding := w.getVerticalPadding(l)
+	hpadding := w.getHorizontalPadding(l)
 
-	text := b.getText(l, linesInfo)
+	text := w.getText(l, linesInfo)
 
 	var sb strings.Builder
 
@@ -139,42 +111,42 @@ func (b Box) String() string {
 	return sb.String()
 }
 
-func (b Box) getStyle() BoxStyle {
-	styleName := b.Style
+func (w *Widget) getTemplate() Template {
+	styleName := w.Template
 
-	if _, ok := boxStyleAlias[styleName]; ok {
-		styleName = boxStyleAlias[styleName]
+	if _, ok := boxTemplateAlias[styleName]; ok {
+		styleName = boxTemplateAlias[styleName]
 	}
 
-	if s, ok := boxStyles[styleName]; ok {
+	if s, ok := boxTemplates[styleName]; ok {
 		return s
 	}
 
 	if len(styleName) == 1 {
-		return BoxStyleFromChar(styleName)
+		return TemplateFromChar(styleName)
 	}
 
-	return boxStyles[defaultStyle]
+	return boxTemplates[defaultTemplate]
 }
 
-func (b Box) getHorizontalPadding(len int) string {
-	switch b.Alignment {
+func (w *Widget) getHorizontalPadding(len int) string {
+	switch w.Alignment {
 	case "right":
-		return strings.Repeat(" ", (b.ScreenW - len - 2))
+		return strings.Repeat(" ", (w.ScreenW - len - 2))
 	case "center":
-		return strings.Repeat(" ", (b.ScreenW-len)/2)
+		return strings.Repeat(" ", (w.ScreenW-len)/2)
 	case "left":
 		return ""
 	default:
-		return strings.Repeat(" ", (b.ScreenW-len)/2)
+		return strings.Repeat(" ", (w.ScreenW-len)/2)
 	}
 }
 
-func (b Box) getVerticalPadding(len int) []string {
+func (w *Widget) getVerticalPadding(len int) []string {
 	pad := strings.Repeat(" ", len)
-	sep := b.getStyle().Vertical
-	var lines = make([]string, 0, b.Vpad)
-	for i := 0; i < b.Vpad; i++ {
+	sep := w.getTemplate().Vertical
+	var lines = make([]string, 0, w.Vpad)
+	for i := 0; i < w.Vpad; i++ {
 		lines = append(lines, (sep + pad + sep))
 	}
 	return lines
@@ -211,10 +183,10 @@ func runWidth(r rune) int {
 	return 1
 }
 
-func (b Box) getText(length int, lines textLines) []string {
+func (w *Widget) getText(length int, lines textLines) []string {
 	var s []string
 	l := lines.lines
-	sep := b.getStyle().Vertical
+	sep := w.getTemplate().Vertical
 
 	for _, line := range l {
 
