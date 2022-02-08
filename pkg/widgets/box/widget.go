@@ -1,6 +1,7 @@
 package box
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/jwalton/gchalk"
@@ -54,22 +55,33 @@ func New(options ...Option) *Widget {
 	return w
 }
 
-func (b Widget) String() string {
-	style := b.getTemplate()
+//SetContent updates content
+func (w *Widget) SetContent(content string) *Widget {
+	w.Content = content
+	return w
+}
 
-	lines := strings.Split(b.Content, "\\n")
+//Render will render the widget
+func (w *Widget) Render() {
+	fmt.Println(w.String())
+}
+
+func (w *Widget) String() string {
+	style := w.getTemplate()
+
+	lines := strings.Split(w.Content, "\\n")
 	linesInfo := longestLine(lines)
 
-	l := linesInfo.longest + 2 + (b.Hpad * 2)
+	l := linesInfo.longest + 2 + (w.Hpad * 2)
 
 	bar := strings.Repeat(style.Horizontal, l)
 	tbar := style.TopLeft + bar + style.TopRight
 	bbar := style.BottomLeft + bar + style.BottomRight
 
-	padding := b.getVerticalPadding(l)
-	hpadding := b.getHorizontalPadding(l)
+	padding := w.getVerticalPadding(l)
+	hpadding := w.getHorizontalPadding(l)
 
-	text := b.getText(l, linesInfo)
+	text := w.getText(l, linesInfo)
 
 	var sb strings.Builder
 
@@ -99,8 +111,8 @@ func (b Widget) String() string {
 	return sb.String()
 }
 
-func (b Widget) getTemplate() Template {
-	styleName := b.Template
+func (w *Widget) getTemplate() Template {
+	styleName := w.Template
 
 	if _, ok := boxTemplateAlias[styleName]; ok {
 		styleName = boxTemplateAlias[styleName]
@@ -117,24 +129,24 @@ func (b Widget) getTemplate() Template {
 	return boxTemplates[defaultTemplate]
 }
 
-func (b Widget) getHorizontalPadding(len int) string {
-	switch b.Alignment {
+func (w *Widget) getHorizontalPadding(len int) string {
+	switch w.Alignment {
 	case "right":
-		return strings.Repeat(" ", (b.ScreenW - len - 2))
+		return strings.Repeat(" ", (w.ScreenW - len - 2))
 	case "center":
-		return strings.Repeat(" ", (b.ScreenW-len)/2)
+		return strings.Repeat(" ", (w.ScreenW-len)/2)
 	case "left":
 		return ""
 	default:
-		return strings.Repeat(" ", (b.ScreenW-len)/2)
+		return strings.Repeat(" ", (w.ScreenW-len)/2)
 	}
 }
 
-func (b Widget) getVerticalPadding(len int) []string {
+func (w *Widget) getVerticalPadding(len int) []string {
 	pad := strings.Repeat(" ", len)
-	sep := b.getTemplate().Vertical
-	var lines = make([]string, 0, b.Vpad)
-	for i := 0; i < b.Vpad; i++ {
+	sep := w.getTemplate().Vertical
+	var lines = make([]string, 0, w.Vpad)
+	for i := 0; i < w.Vpad; i++ {
 		lines = append(lines, (sep + pad + sep))
 	}
 	return lines
@@ -171,10 +183,10 @@ func runWidth(r rune) int {
 	return 1
 }
 
-func (b Widget) getText(length int, lines textLines) []string {
+func (w *Widget) getText(length int, lines textLines) []string {
 	var s []string
 	l := lines.lines
-	sep := b.getTemplate().Vertical
+	sep := w.getTemplate().Vertical
 
 	for _, line := range l {
 
