@@ -19,7 +19,7 @@ func init() {
 
 var execCmd = &cobra.Command{
 	Use:     "exec [text|stdin]",
-	Aliases: []string{"ok", "OK"},
+	Aliases: []string{"cmd"},
 	Short:   "Execute command and show either success or failure notice",
 	Long: `Execute command and show either success or failure notice.
 If the process exits without error (exit code 0) then we
