@@ -33,7 +33,7 @@ var failureCmd = &cobra.Command{
 	Example: `
 	lgr failure 'This is a failed message'
   lgr ko 'This is a failed message'
-  curl -v example.com | lgr ko
+  curl -v example.com || lgr ko
 	`,
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
