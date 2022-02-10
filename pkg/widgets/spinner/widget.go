@@ -21,9 +21,11 @@ type Widget struct {
 	Frames     Frames
 	FrameRate  time.Duration
 	runChan    chan struct{}
+	updateChan chan string
 	Output     io.Writer
 	active     bool
-	Style      *gchalk.Builder
+	closed     bool
+	style      *gchalk.Builder
 	MaxWidth   int
 	HideCursor bool
 }
@@ -31,11 +33,12 @@ type Widget struct {
 //New creates a new Spinner instance
 func New(options ...Option) *Widget {
 	s := &Widget{
-		Label:     "Executing...",
-		Frames:    FramesBall,
-		FrameRate: frameRate,
-		Style:     gchalk.WithBrightCyan(),
-		runChan:   make(chan struct{}),
+		Label:      "Executing...",
+		Frames:     FramesBall,
+		FrameRate:  frameRate,
+		style:      gchalk.WithBrightCyan(),
+		runChan:    make(chan struct{}),
+		updateChan: make(chan string),
 	}
 
 	for _, option := range options {
@@ -83,6 +86,39 @@ func (s *Widget) Stop() *Widget {
 	return s
 }
 
+//Close will stop taking updates
+func (s *Widget) Close() {
+	s.Lock()
+	defer s.Unlock()
+	if !s.closed {
+		close(s.updateChan)
+		s.closed = true
+	}
+}
+
+//UpdateLabel with update text to be rendered in the screen
+func (s *Widget) UpdateLabel(l string) {
+	if s.active {
+		s.updateChan <- l
+	}
+}
+
+//SetStyle will set the style used in the label
+func (s *Widget) SetStyle(style *gchalk.Builder) *Widget {
+	s.Lock()
+	s.style = style
+	s.Unlock()
+	return s
+}
+
+//ApplyStyle will apply the style to the given string
+func (s *Widget) ApplyStyle(str string) string {
+	if s.style != nil {
+		str = s.style.Paint(str)
+	}
+	return str
+}
+
 //SetLabel updates the label value
 func (s *Widget) SetLabel(label string) *Widget {
 	s.Lock()
@@ -97,10 +133,18 @@ func (s *Widget) clearOutput() {
 
 func (s *Widget) writter() {
 	s.animate()
+
+	var l string
+	var ok bool
+
 	for {
 		select {
 		case <-s.runChan:
 			return
+		case l, ok = <-s.updateChan:
+			if ok {
+				s.SetLabel(l)
+			}
 		default:
 			s.animate()
 		}
@@ -110,8 +154,6 @@ func (s *Widget) writter() {
 func (s *Widget) animate() {
 	var out string
 
-	style := gchalk.WithBrightCyan()
-
 	//hides cursor
 	if s.HideCursor {
 		fmt.Fprint(s.Output, "\033[?25l")
@@ -120,9 +162,7 @@ func (s *Widget) animate() {
 	for i := 0; i < len(s.Frames); i++ {
 		frame := s.Frames[i]
 
-		if s.Style != nil {
-			frame = style.Paint(frame)
-		}
+		frame = s.ApplyStyle(frame)
 
 		label := clipString(s.Label, s.MaxWidth)
 		out = fmt.Sprintf("\r %s %s", frame, label)
