@@ -65,10 +65,12 @@ func cmdExec(cmd *cobra.Command, args []string) error {
 	)
 	defer widget.Close()
 
+	heading := widget.ApplyStyle("output")
 	label := widget.ApplyStyle("command ") + strings.Join(args, " ")
+
 	widget.SetLabel(label)
 
-	done := stdoutScanner(stdout, &output, widget)
+	done := stdoutScanner(heading, stdout, &output, widget)
 
 	widget.Start()
 	run.Start()
@@ -94,7 +96,6 @@ func cmdExec(cmd *cobra.Command, args []string) error {
 	handleInput("success", []string{"success"})
 
 	content := indentOutput(output.String(), opts.ShortHeading)
-
 	if content == "" {
 		return nil
 	}
@@ -105,13 +106,10 @@ func cmdExec(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func stdoutScanner(stdout io.Reader, output *strings.Builder, widget *spinner.Widget) chan struct{} {
+func stdoutScanner(heading string, stdout io.Reader, output *strings.Builder, widget *spinner.Widget) chan struct{} {
 	scanner := bufio.NewScanner(stdout)
 	scanner.Split(bufio.ScanLines)
 	done := make(chan struct{})
-
-	style := gchalk.WithBrightCyan()
-	heading := style.Paint("output")
 
 	go func() {
 		for scanner.Scan() {
