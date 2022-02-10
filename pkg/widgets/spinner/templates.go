@@ -10,4 +10,5 @@ var (
 	FramesBall          = Frames{"∙∙∙", "●∙∙", "∙●∙", "∙∙●", "∙∙∙"}
 	FramesBarHorizontal = Frames{"▏", "▎", "▍", "▌", "▋", "▊", "▉", "▊", "▋", "▌", "▍", "▎"}
 	FramesBarsVertical  = Frames{"▁", "▃", "▄", "▅", "▆", "▇", "█", "▇", "▆", "▅", "▄", "▃", "▁"}
+	FramesSnake         = Frames{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 )
