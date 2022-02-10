@@ -35,7 +35,7 @@ func WithFrameRate(value time.Duration) Option {
 //WithStyle adds color style
 func WithStyle(value *gchalk.Builder) Option {
 	return func(s *Widget) {
-		s.Style = value
+		s.style = value
 	}
 }
 
