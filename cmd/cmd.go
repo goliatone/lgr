@@ -1,21 +1,19 @@
 package cmd
 
 import (
-	"bytes"
+	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/goliatone/lgr/pkg/widgets/spinner"
+	"github.com/jwalton/gchalk"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
-
-func init() {
-	rootCmd.AddCommand(execCmd)
-
-}
 
 var execCmd = &cobra.Command{
 	Use:     "exec [text|stdin]",
@@ -30,58 +28,101 @@ failure message.
   lgr exec 'This is a successful message'
 	`,
 	Args: cobra.MinimumNArgs(0),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: cmdExec,
+}
 
-		opts.ShortHeading = true
+func init() {
+	rootCmd.AddCommand(execCmd)
 
-		label := "executing: " + strings.Join(args, " ")
+}
 
-		name, params := makeExecParams(args)
-		run := exec.Command(name, params...)
-		run.Env = os.Environ()
+func cmdExec(cmd *cobra.Command, args []string) error {
 
-		var out bytes.Buffer
-		run.Stdout = &out
-		run.Stderr = &out
-		//TODO: make configurable via flags
-		widget := spinner.New(
-			spinner.WithLabel(label),
-			spinner.WithMaxWidth(getMaxScreenWidth(3)),
-			spinner.WithFrames(spinner.FramesBarHorizontal),
-			spinner.WithOutput(os.Stdout),
-		)
+	opts.ShortHeading = true
 
-		widget.Start()
+	var output strings.Builder
+	output.WriteString(strings.Join(args, " ") + "\n")
 
-		err := run.Run()
+	name, params := makeExecParams(args)
 
-		if err != nil {
-			widget.Stop()
-			handleInput("failure", []string{"error " + label})
+	run := exec.Command(name, params...)
+	run.Env = os.Environ()
+	run.Stderr = &output
 
-			opts.WithIndent()
-			content := indentOutput(err.Error()+"\n"+out.String(), opts.ShortHeading)
-			handleInput("error", []string{content})
+	stdout, err := run.StdoutPipe()
+	if err != nil {
+		return err
+	}
 
-			if exitError, ok := err.(*exec.ExitError); ok {
-				os.Exit(exitError.ExitCode())
-			}
-			return
-		}
+	//TODO: make configurable via flags
+	widget := spinner.New(
+		// spinner.WithLabel(label),
+		spinner.WithMaxWidth(getMaxScreenWidth(3)),
+		spinner.WithFrames(spinner.FramesSnake),
+		spinner.WithOutput(os.Stdout),
+		spinner.WithStyle(gchalk.WithBrightCyan()),
+		spinner.WithFrameRate(time.Millisecond*60),
+	)
+	defer widget.Close()
 
-		widget.Stop()
+	label := widget.ApplyStyle("command ") + strings.Join(args, " ")
+	widget.SetLabel(label)
 
-		handleInput("success", []string{"success " + label})
+	done := stdoutScanner(stdout, &output, widget)
 
-		content := indentOutput(out.String(), opts.ShortHeading)
+	widget.Start()
+	run.Start()
 
-		if content == "" {
-			return
-		}
+	<-done
+
+	err = run.Wait()
+	widget.Stop()
+
+	if err != nil {
+		handleInput("failure", []string{"error: " + err.Error()})
 
 		opts.WithIndent()
-		handleInput("info", []string{content})
-	},
+		content := indentOutput(output.String(), opts.ShortHeading)
+		handleInput("error", []string{content})
+
+		if exitError, ok := err.(*exec.ExitError); ok {
+			os.Exit(exitError.ExitCode())
+		}
+		return nil
+	}
+
+	handleInput("success", []string{"success"})
+
+	content := indentOutput(output.String(), opts.ShortHeading)
+
+	if content == "" {
+		return nil
+	}
+
+	opts.WithIndent()
+	handleInput("info", []string{content})
+
+	return nil
+}
+
+func stdoutScanner(stdout io.Reader, output *strings.Builder, widget *spinner.Widget) chan struct{} {
+	scanner := bufio.NewScanner(stdout)
+	scanner.Split(bufio.ScanLines)
+	done := make(chan struct{})
+
+	style := gchalk.WithBrightCyan()
+	heading := style.Paint("output")
+
+	go func() {
+		for scanner.Scan() {
+			m := scanner.Text()
+			output.WriteString(m + "\n")
+			widget.UpdateLabel(heading + " " + m)
+		}
+		done <- struct{}{}
+	}()
+
+	return done
 }
 
 func makeExecParams(args []string) (string, []string) {
