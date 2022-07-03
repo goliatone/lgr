@@ -58,6 +58,10 @@ func (p JSONLineParser) Parse(line []byte) (*Message, error) {
 		if parseTimestampFloat(m, data, key) {
 			break
 		}
+		//Handle iso date e.g. 2022-07-02T04:42:57.952Z
+		if parseTimestampString(m, data, key) {
+			break
+		}
 	}
 
 	parseLevelString(m, data, "level")
@@ -110,6 +114,19 @@ func parseTimestampFloat(m *Message, data map[string]interface{}, key string) bo
 		delete(data, key)
 		sec, dec := math.Modf(ts)
 		t := time.Unix(int64(sec), int64(dec*(1e9))).UTC()
+		m.Timestamp = &t
+	}
+	return ok
+}
+
+func parseTimestampString(m *Message, data map[string]interface{}, key string) bool {
+	ts, ok := data[key].(string)
+	if ok {
+		t, err := time.Parse(time.RFC3339, ts)
+		if err != nil {
+			return false
+		}
+		delete(data, key)
 		m.Timestamp = &t
 	}
 	return ok
