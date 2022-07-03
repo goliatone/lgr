@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
+	"unicode/utf8"
 
 	"github.com/jwalton/gchalk"
 )
@@ -20,11 +22,19 @@ type Options struct {
 	ShortHeading  bool
 	HeadingPrefix string
 	NoNewline     bool
+	NoTimestamp   bool
 	Modifiers     *[]string
 }
 
+var IndentationChar string = " └─"
+var TimestampFormat = "03:04:06.000000"
+
 func (o *Options) WithIndent() {
-	o.HeadingPrefix = " └─"
+	o.HeadingPrefix = IndentationChar
+}
+
+func (o *Options) HasIndent() bool {
+	return o.HeadingPrefix == IndentationChar
 }
 
 //Stylize will add stile to your body
@@ -51,14 +61,21 @@ func Stylize(body string, opts *Options) (string, string) {
 		}
 	}
 
-	content := body
-
-	if ok, _ := checkInput(os.Stdin); ok {
-		if body != "" {
-			content += " "
-		}
-		content = streamToString(os.Stdin)
+	now := time.Now()
+	ts := now.Format(TimestampFormat)
+	if style, ok := elementStyle["timestamp"]; ok {
+		ts = style.Paint(ts)
 	}
+
+	if opts.NoTimestamp != true {
+		if opts.HasIndent() {
+			ts = strings.Repeat(" ", utf8.RuneCountInString(TimestampFormat))
+		}
+
+		heading = fmt.Sprintf("%s %s", ts, heading)
+	}
+
+	content := body
 
 	style, err := gchalk.WithStyle(opts.Color)
 
