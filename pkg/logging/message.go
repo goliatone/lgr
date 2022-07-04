@@ -35,6 +35,11 @@ type Message struct {
 	Fields    []MessageField
 }
 
+//HasFields return true if there are extra fields
+func (m Message) HasFields() bool {
+	return len(m.Fields) > 0
+}
+
 //LineParser exposes a Parse method to
 //handle log entries
 type LineParser interface {
