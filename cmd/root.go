@@ -96,9 +96,13 @@ func handleLogStream(args []string) error {
 		if err != nil {
 			return err
 		}
-		//TODO: move to render
-		message := fmt.Sprintf("%s   %s", line.Message, line.Fields)
+
 		opts.Level = line.Level
+
+		message := line.Message
+		if line.HasFields() {
+			message = fmt.Sprintf("%s   %s", line.Message, line.Fields)
+		}
 		render.Print(message, opts)
 	}
 
