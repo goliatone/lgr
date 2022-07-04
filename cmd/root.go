@@ -3,7 +3,6 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -56,8 +55,8 @@ Styling:
 			opts.ShortHeading = true
 		}
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-		handleLogStream(args)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return handleLogStream(args)
 	},
 }
 
@@ -87,7 +86,7 @@ func Execute() {
 	}
 }
 
-func handleLogStream(args []string) {
+func handleLogStream(args []string) error {
 
 	parser := logging.JSONLineParser{}
 	scanner := bufio.NewScanner(os.Stdin)
@@ -95,22 +94,26 @@ func handleLogStream(args []string) {
 	for scanner.Scan() {
 		line, err := parser.Parse(scanner.Bytes())
 		if err != nil {
-			log.Fatal(fmt.Errorf("scanner.Err: %w", err))
+			return err
 		}
+		//TODO: move to render
 		message := fmt.Sprintf("%s   %s", line.Message, line.Fields)
 		opts.Level = line.Level
 		render.Print(message, opts)
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Fatal(fmt.Errorf("scanner.Err: %w", err))
+		return err
 	}
+
+	return nil
 }
 
 func handleInput(level string, args []string) {
 	opts.Level = level
 
 	var scanner *bufio.Scanner
+
 	stat, _ := os.Stdin.Stat()
 	if (stat.Mode() & os.ModeCharDevice) == 0 {
 		scanner = bufio.NewScanner(os.Stdin)
@@ -118,18 +121,13 @@ func handleInput(level string, args []string) {
 		scanner = bufio.NewScanner(strings.NewReader(getBody(args)))
 	}
 
-	//TODO: check if no body and no stdin then show usage?
-	// body := getBody(args)
-	i := 0
+	f := true
 	for scanner.Scan() {
 		body := scanner.Text()
-
-		if i > 0 {
+		if f {
 			body = indentOutput(body, opts.ShortHeading)
 		}
-
-		i++
-
+		f = false
 		render.Print(body, opts)
 	}
 
