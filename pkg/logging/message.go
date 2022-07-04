@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 	"time"
 
@@ -19,6 +20,12 @@ type MessageField struct {
 func (m MessageField) String() string {
 	return fmt.Sprintf("%s=%s", m.Key, m.Value)
 }
+
+type sortableFields []MessageField
+
+func (v sortableFields) Len() int           { return len(v) }
+func (v sortableFields) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
+func (v sortableFields) Less(i, j int) bool { return v[i].Key < v[j].Key }
 
 //Message holds fields from a log line
 type Message struct {
@@ -81,6 +88,7 @@ func (p JSONLineParser) Parse(line []byte) (*Message, error) {
 				m.Fields = append(m.Fields, MessageField{Key: key, Value: string(value)})
 			}
 		}
+		sort.Sort(sortableFields(m.Fields))
 	}
 
 	return m, nil
@@ -99,7 +107,6 @@ func parseLevelString(m *Message, data map[string]interface{}, key string) bool 
 	level, ok := data[key].(string)
 	if ok {
 		delete(data, key)
-
 		level = stripansi.Strip(level)
 		level = strings.ToLower(level)
 		level = strings.Trim(level, " ")
@@ -122,6 +129,7 @@ func parseTimestampFloat(m *Message, data map[string]interface{}, key string) bo
 func parseTimestampString(m *Message, data map[string]interface{}, key string) bool {
 	ts, ok := data[key].(string)
 	if ok {
+		//TODO: we could iterate over all the formats
 		t, err := time.Parse(time.RFC3339, ts)
 		if err != nil {
 			return false
