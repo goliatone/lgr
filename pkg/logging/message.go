@@ -35,9 +35,9 @@ func (m MessageField) String() string {
 
 type sortableFields []MessageField
 
-func (v sortableFields) Len() int           { return len(v) }
-func (v sortableFields) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
-func (v sortableFields) Less(i, j int) bool { return v[i].Key < v[j].Key }
+func (s sortableFields) Len() int           { return len(s) }
+func (s sortableFields) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s sortableFields) Less(i, j int) bool { return s[i].Key < s[j].Key }
 
 //Message holds fields from a log line
 type Message struct {
@@ -53,6 +53,7 @@ func (m Message) HasFields() bool {
 	return len(m.Fields) > 0
 }
 
+//GetTimestampOrNow return given timestamp or now
 func (m Message) GetTimestampOrNow() *time.Time {
 	if m.Timestamp == nil {
 		t := time.Now()
