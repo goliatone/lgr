@@ -45,11 +45,20 @@ type Message struct {
 	Level     string
 	Message   string
 	Fields    []MessageField
+	Line      int
 }
 
 //HasFields return true if there are extra fields
 func (m Message) HasFields() bool {
 	return len(m.Fields) > 0
+}
+
+func (m Message) GetTimestampOrNow() *time.Time {
+	if m.Timestamp == nil {
+		t := time.Now()
+		return &t
+	}
+	return m.Timestamp
 }
 
 //LineParser exposes a Parse method to
@@ -160,16 +169,36 @@ func parseTimestampFloat(m *Message, data MessageData, key string) bool {
 	return ok
 }
 
+var tsFormats = []string{
+	time.RFC3339,
+	time.UnixDate,
+	time.Layout,
+	time.ANSIC,
+	time.RubyDate,
+	time.RFC822,
+	time.RFC822Z,
+	time.RFC850,
+	time.RFC1123,
+	time.RFC1123Z,
+	time.RFC3339Nano,
+	time.Stamp,
+	time.StampMilli,
+	time.StampMicro,
+	time.StampNano,
+}
+
 func parseTimestampString(m *Message, data MessageData, key string) bool {
 	ts, ok := data[key].(string)
 	if ok {
 		//TODO: we could iterate over all the formats
-		t, err := time.Parse(time.RFC3339, ts)
-		if err != nil {
-			return false
+		for _, format := range tsFormats {
+			if t, err := time.Parse(format, ts); err == nil {
+				delete(data, key)
+				m.Timestamp = &t
+				return true
+			}
 		}
-		delete(data, key)
-		m.Timestamp = &t
 	}
-	return ok
+
+	return false
 }
