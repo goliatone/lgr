@@ -11,6 +11,18 @@ import (
 	"github.com/acarl005/stripansi"
 )
 
+var numericLevelMap = map[int]string{
+	10: "trace",
+	20: "debug",
+	30: "info",
+	40: "warn",
+	50: "error",
+	60: "fatal",
+}
+
+//MessageData encodes the log payload
+type MessageData = map[string]interface{}
+
 //MessageField hols key value fields
 type MessageField struct {
 	Key   string
@@ -58,7 +70,7 @@ type JSONLineParser struct {
 func (p JSONLineParser) Parse(line []byte) (*Message, error) {
 
 	m := &Message{}
-	var data map[string]interface{}
+	var data MessageData
 
 	err := json.Unmarshal(line, &data)
 	if err != nil {
@@ -76,7 +88,9 @@ func (p JSONLineParser) Parse(line []byte) (*Message, error) {
 		}
 	}
 
-	parseLevelString(m, data, "level")
+	if !parseLevelString(m, data, "level") {
+		parseLevelInt(m, data, "level")
+	}
 
 	for _, key := range messageKeys {
 		if parseMessage(m, data, key) {
@@ -99,7 +113,7 @@ func (p JSONLineParser) Parse(line []byte) (*Message, error) {
 	return m, nil
 }
 
-func parseMessage(m *Message, data map[string]interface{}, key string) bool {
+func parseMessage(m *Message, data MessageData, key string) bool {
 	message, ok := data[key].(string)
 	if ok {
 		delete(data, key)
@@ -108,7 +122,7 @@ func parseMessage(m *Message, data map[string]interface{}, key string) bool {
 	return ok
 }
 
-func parseLevelString(m *Message, data map[string]interface{}, key string) bool {
+func parseLevelString(m *Message, data MessageData, key string) bool {
 	level, ok := data[key].(string)
 	if ok {
 		delete(data, key)
@@ -120,7 +134,22 @@ func parseLevelString(m *Message, data map[string]interface{}, key string) bool 
 	return ok
 }
 
-func parseTimestampFloat(m *Message, data map[string]interface{}, key string) bool {
+func parseLevelInt(m *Message, data MessageData, key string) bool {
+	level, ok := data[key].(float64)
+	if !ok {
+		return false
+	}
+
+	label, ok := numericLevelMap[int(level)]
+	if !ok {
+		return false
+	}
+	delete(data, key)
+	m.Level = label
+	return true
+}
+
+func parseTimestampFloat(m *Message, data MessageData, key string) bool {
 	ts, ok := data[key].(float64)
 	if ok {
 		delete(data, key)
@@ -131,7 +160,7 @@ func parseTimestampFloat(m *Message, data map[string]interface{}, key string) bo
 	return ok
 }
 
-func parseTimestampString(m *Message, data map[string]interface{}, key string) bool {
+func parseTimestampString(m *Message, data MessageData, key string) bool {
 	ts, ok := data[key].(string)
 	if ok {
 		//TODO: we could iterate over all the formats

@@ -74,7 +74,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&opts.NoNewline, "no-newline", "n", false, "output not ended in newline")
 	rootCmd.PersistentFlags().BoolVarP(&opts.ShortHeading, "short-headlines", "S", false, "use short headings")
 	rootCmd.PersistentFlags().BoolVar(&opts.NoTimestamp, "no-timestamp", false, "do now show timestamp")
-
+	rootCmd.PersistentFlags().StringVarP(&opts.TimestampFormat, "time-format", "t", render.TimestampFormat, "timestamp format")
 	opts.Modifiers = rootCmd.PersistentFlags().StringSliceP("modifier", "m", []string{}, "list of style modifiers")
 }
 
