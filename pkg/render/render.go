@@ -14,20 +14,23 @@ import (
 
 //Options holds print modifiers
 type Options struct {
-	Bold          bool
-	Level         string
-	Color         string
-	NoColor       bool
-	Heading       string
-	ShortHeading  bool
-	HeadingPrefix string
-	NoNewline     bool
-	NoTimestamp   bool
-	Modifiers     *[]string
+	Bold            bool
+	Level           string
+	Color           string
+	NoColor         bool
+	Heading         string
+	ShortHeading    bool
+	HeadingPrefix   string
+	NoNewline       bool
+	NoTimestamp     bool
+	Modifiers       *[]string
+	TimestampFormat string
 }
 
 var IndentationChar string = " └─"
-var TimestampFormat = "03:04:06.000000"
+var TimestampFormat = "01-02-2006 03:04:06.000000"
+
+// var TimestampFormat = "2006-02-01 03:04:06.000000"
 
 func (o *Options) WithIndent() {
 	o.HeadingPrefix = IndentationChar
@@ -62,14 +65,14 @@ func Stylize(body string, opts *Options) (string, string) {
 	}
 
 	now := time.Now()
-	ts := now.Format(TimestampFormat)
+	ts := now.Format(opts.TimestampFormat)
 	if style, ok := elementStyle["timestamp"]; ok {
 		ts = style.Paint(ts)
 	}
 
 	if opts.NoTimestamp != true {
 		if opts.HasIndent() {
-			ts = strings.Repeat(" ", utf8.RuneCountInString(TimestampFormat))
+			ts = strings.Repeat(" ", utf8.RuneCountInString(opts.TimestampFormat))
 		}
 
 		heading = fmt.Sprintf("%s %s", ts, heading)
