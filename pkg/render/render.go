@@ -28,7 +28,7 @@ type Options struct {
 }
 
 var IndentationChar string = " └─"
-var TimestampFormat = "01-02-2006 03:04:06.000000"
+var TimestampFormat = "01-02-2006 15:04:05.000000"
 
 // var TimestampFormat = "2006-02-01 03:04:06.000000"
 
@@ -75,7 +75,7 @@ func Stylize(body string, opts *Options) (string, string) {
 			ts = strings.Repeat(" ", utf8.RuneCountInString(opts.TimestampFormat))
 		}
 
-		heading = fmt.Sprintf("%s %s", ts, heading)
+		heading = fmt.Sprintf("[%s] %s", ts, heading)
 	}
 
 	content := body
