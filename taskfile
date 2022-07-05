@@ -34,13 +34,77 @@ function dev:test {
 }
 
 function wrk:dev {
-    gvm use go1.17
+    gvm use go1.17.8
     gvm pkgset use lgr
+    GOROOT=/home/goliatone/.gvm/gos/go1.17.8 ci .
+}
+
+function example {
+    
+    ./bin/darwin/lgr I "This is an example of how to do stuff..."
+    ./bin/darwin/lgr E "This is an error"
+    ./bin/darwin/lgr W "Not sure how this"
+    ./bin/darwin/lgr exec -- ls .
+    ./bin/darwin/lgr ok "This is ok"
+    ./bin/darwin/lgr ko "This is KO"
+    ./bin/darwin/lgr info "This is an example of how to do stuff..."
+    ./bin/darwin/lgr error "This is an error"
+    ./bin/darwin/lgr fatal "This is KO"
+    ./bin/darwin/lgr warn "Not sure how this"
+    ./bin/darwin/lgr success "This is KO"
+    ./bin/darwin/lgr failure "This is KO"
+    ./bin/darwin/lgr box "Not sure how this"
+    ./bin/darwin/lgr box -a left --style round "A round box"
+    fatal
+    for i in {10..100..10}; do
+        sleep .1
+	    ./bin/darwin/lgr bar "$i"
+    done
+}
+
+function fatal {
+    (fail) || ./bin/darwin/lgr fatal --exit-code $? "failed with exit code $?"
+}
+
+function fail {
+    ./bin/darwin/lgr I "calling fail function..."
+    exit 123
 }
 
 ## ########################################
 ##                 Build
 ## ########################################
+
+## -----
+## build
+##
+## Install binary and service on host machine.
+## We can pass an env file with values that will
+## be available for the running service.
+##
+## Globals:
+##  PROJECT - $PROJECT
+##  BINNAME
+##  ENTRYPOINT
+##
+## Arguments:
+## @arg 1 {string} [tag=0.0.1]
+function build {
+    echo ""
+    echo "running build..."
+
+    VERSION=$(version:get)
+    BUILD_DATE=$(date -u +%Y%m%d.%H%M%S)
+    RELBIN="./bin/darwin"
+
+    mkdir -p ${RELBIN}
+
+    LDFLAGS="-s -w -X '${PROJECT}/pkg/version.Tag=${VERSION}' -X '${PROJECT}/pkg/version.Time=${BUILD_DATE}' -X '${PROJECT}/pkg/version.User=$(id -u -n)'"
+
+    echo "go build -ldflags ${LDFLAGS}"
+
+    go build -ldflags "${LDFLAGS}" -o "${RELBIN}/${BINNAME}" "${ENTRYPOINT}"
+}
 
 ## -----
 ## release:build
@@ -60,7 +124,7 @@ function release:build {
     echo ""
     echo "running release:build..."
 
-    VERSION=$(version:upsert $1)
+    VERSION=$(version:upsert "$1")
     BUILD_DATE=$(date -u +%Y%m%d.%H%M%S)
     RELBIN="./bin/darwin"
 
@@ -288,7 +352,7 @@ function install:ubuntu {
     sudo dpkg -i lgr_${tag}_linux_x86_64.deb
     sleep 1
     echo ""
-    echo $(lgr -v)
+    lgr version
     echo ""
 }
 

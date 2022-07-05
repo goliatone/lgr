@@ -2,11 +2,16 @@ package render
 
 import "github.com/jwalton/gchalk"
 
+var elementStyle = map[string]*gchalk.Builder{
+	"timestamp": gchalk.WithGray().WithBold(),
+	"body":      gchalk.WithGray(),
+}
+
 var headings = map[string]string{
 	"trace":   "",
 	"debug":   "[DEBUG]",
-	"info":    " [INFO]",
-	"warn":    " [WARN]",
+	"info":    "[INFO ]",
+	"warn":    "[WARN ]",
 	"error":   "[ERROR]",
 	"fatal":   "[FATAL]",
 	"success": " 👍",

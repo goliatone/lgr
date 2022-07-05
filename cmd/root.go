@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/goliatone/lgr/pkg/logging"
 	"github.com/goliatone/lgr/pkg/render"
 	"github.com/spf13/cobra"
 )
@@ -52,13 +55,15 @@ Styling:
 			opts.ShortHeading = true
 		}
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-		handleInput("trace", args)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return handleLogStream(args)
 	},
 }
 
 var errorExitCode = 1
 var opts *render.Options
+
+const maxBufferSize = 32 * 1024
 
 func init() {
 	opts = &render.Options{}
@@ -70,7 +75,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&opts.NoColor, "no-color", false, "disable color output")
 	rootCmd.PersistentFlags().BoolVarP(&opts.NoNewline, "no-newline", "n", false, "output not ended in newline")
 	rootCmd.PersistentFlags().BoolVarP(&opts.ShortHeading, "short-headlines", "S", false, "use short headings")
-
+	rootCmd.PersistentFlags().BoolVar(&opts.NoTimestamp, "no-timestamp", false, "do now show timestamp")
+	rootCmd.PersistentFlags().StringVar(&opts.TimestampFormat, "time-format", render.TimestampFormat, "timestamp format")
 	opts.Modifiers = rootCmd.PersistentFlags().StringSliceP("modifier", "m", []string{}, "list of style modifiers")
 }
 
@@ -82,11 +88,63 @@ func Execute() {
 	}
 }
 
+func handleLogStream(args []string) error {
+
+	parser := logging.JSONLineParser{}
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Buffer(make([]byte, maxBufferSize), maxBufferSize) // 32k
+
+	i := 0
+	for scanner.Scan() {
+		line, err := parser.Parse(scanner.Bytes())
+		if err != nil {
+			return err
+		}
+		i++
+
+		line.Line = i
+		opts.Level = line.Level
+
+		render.Print(line, opts)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func handleInput(level string, args []string) {
 	opts.Level = level
-	//TODO: check if no body and no stdin then show usage?
-	body := getBody(args)
-	render.Print(body, opts)
+
+	var scanner *bufio.Scanner
+
+	stat, _ := os.Stdin.Stat()
+	if (stat.Mode() & os.ModeCharDevice) == 0 {
+		scanner = bufio.NewScanner(os.Stdin)
+	} else {
+		//TODO: maybe we also handle file paths? in which case we want to close handle
+		scanner = bufio.NewScanner(strings.NewReader(getBody(args)))
+	}
+
+	i := 0
+	for scanner.Scan() {
+		body := scanner.Text()
+		if i == 0 {
+			body = indentOutput(body, opts.ShortHeading)
+		}
+		i++
+
+		m := &logging.Message{
+			Line:    i,
+			Level:   level,
+			Message: body,
+		}
+
+		render.Print(m, opts)
+	}
+
 	if opts.Level == "fatal" {
 		os.Exit(errorExitCode)
 	}
@@ -96,5 +154,6 @@ func getBody(args []string) string {
 	if len(args) == 0 {
 		return ""
 	}
-	return args[0]
+	//Get all strings as a single item
+	return strings.Join(args, " ")
 }

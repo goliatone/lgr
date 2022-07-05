@@ -6,59 +6,99 @@ import (
 	"io"
 	"os"
 	"strings"
+	"unicode/utf8"
 
+	"github.com/goliatone/lgr/pkg/logging"
 	"github.com/jwalton/gchalk"
 )
 
 //Options holds print modifiers
 type Options struct {
-	Bold          bool
-	Level         string
-	Color         string
-	NoColor       bool
-	Heading       string
-	ShortHeading  bool
-	HeadingPrefix string
-	NoNewline     bool
-	Modifiers     *[]string
+	Bold            bool
+	Level           string
+	Color           string
+	NoColor         bool
+	Heading         string
+	ShortHeading    bool
+	HeadingPrefix   string
+	NoNewline       bool
+	NoTimestamp     bool
+	Modifiers       *[]string
+	TimestampFormat string
 }
 
+//IndentationChar is the character used for indentation
+var IndentationChar string = " └─"
+
+//TimestampFormat is the default timestamp format
+var TimestampFormat = "01-02-2006 15:04:05.000000"
+
+//WithIndent sets heading with indent option
 func (o *Options) WithIndent() {
-	o.HeadingPrefix = " └─"
+	o.HeadingPrefix = IndentationChar
 }
 
-//Stylize will add stile to your body
-func Stylize(body string, opts *Options) (string, string) {
-	//Add heading
+//HasIndent returns true if heading has indent
+func (o *Options) HasIndent() bool {
+	return o.HeadingPrefix == IndentationChar
+}
+
+func getHeading(opts *Options) string {
+	if opts.Heading != "" {
+		return opts.Heading
+	}
 	heading := headings[opts.Level]
 
 	if opts.ShortHeading {
 		heading = headingShort[opts.Level]
 	}
+	return heading
+}
 
-	if opts.Heading != "" {
-		heading = opts.Heading
+func styleHeading(heading string, opts *Options) string {
+	if heading == "" {
+		return heading
 	}
 
-	if heading != "" {
-		if style, ok := headingStyle[opts.Level]; ok {
-			heading = style.Paint(heading)
-			heading += " "
+	if style, ok := headingStyle[opts.Level]; ok {
+		heading = style.Paint(heading)
+		heading += " "
+	}
+
+	if opts.HeadingPrefix != "" {
+		heading = opts.HeadingPrefix + heading
+	}
+	return heading
+}
+
+//Stylize will add stile to your body
+func Stylize(msg *logging.Message, opts *Options) (string, string) {
+
+	if msg.HasFields() {
+		msg.Message = fmt.Sprintf("%s   %s", msg.Message, msg.Fields)
+	}
+
+	body := msg.Message
+
+	//Add heading
+	heading := getHeading(opts)
+	heading = styleHeading(heading, opts)
+
+	now := msg.GetTimestampOrNow()
+	ts := now.Format(opts.TimestampFormat)
+	if style, ok := elementStyle["timestamp"]; ok {
+		ts = style.Paint(ts)
+	}
+
+	if opts.NoTimestamp != true {
+		if opts.HasIndent() {
+			ts = strings.Repeat(" ", utf8.RuneCountInString(opts.TimestampFormat))
 		}
 
-		if opts.HeadingPrefix != "" {
-			heading = opts.HeadingPrefix + heading
-		}
+		heading = fmt.Sprintf("%s %s", ts, heading)
 	}
 
 	content := body
-
-	if ok, _ := checkInput(os.Stdin); ok {
-		if body != "" {
-			content += " "
-		}
-		content = streamToString(os.Stdin)
-	}
 
 	style, err := gchalk.WithStyle(opts.Color)
 
@@ -94,8 +134,8 @@ func Stylize(body string, opts *Options) (string, string) {
 }
 
 //Print will render content to stdout
-func Print(body string, opts *Options) {
-	heading, content := Stylize(body, opts)
+func Print(msg *logging.Message, opts *Options) {
+	heading, content := Stylize(msg, opts)
 	//TODO: use writer
 	// fmt.Fprint(w io.Writer, a ...interface{})
 
