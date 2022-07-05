@@ -63,6 +63,8 @@ Styling:
 var errorExitCode = 1
 var opts *render.Options
 
+const maxBufferSize = 32 * 1024
+
 func init() {
 	opts = &render.Options{}
 
@@ -74,7 +76,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&opts.NoNewline, "no-newline", "n", false, "output not ended in newline")
 	rootCmd.PersistentFlags().BoolVarP(&opts.ShortHeading, "short-headlines", "S", false, "use short headings")
 	rootCmd.PersistentFlags().BoolVar(&opts.NoTimestamp, "no-timestamp", false, "do now show timestamp")
-	rootCmd.PersistentFlags().StringVarP(&opts.TimestampFormat, "time-format", "t", render.TimestampFormat, "timestamp format")
+	rootCmd.PersistentFlags().StringVar(&opts.TimestampFormat, "time-format", render.TimestampFormat, "timestamp format")
 	opts.Modifiers = rootCmd.PersistentFlags().StringSliceP("modifier", "m", []string{}, "list of style modifiers")
 }
 
@@ -90,20 +92,20 @@ func handleLogStream(args []string) error {
 
 	parser := logging.JSONLineParser{}
 	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Buffer(make([]byte, maxBufferSize), maxBufferSize) // 32k
 
+	i := 0
 	for scanner.Scan() {
 		line, err := parser.Parse(scanner.Bytes())
 		if err != nil {
 			return err
 		}
+		i++
 
+		line.Line = i
 		opts.Level = line.Level
 
-		message := line.Message
-		if line.HasFields() {
-			message = fmt.Sprintf("%s   %s", line.Message, line.Fields)
-		}
-		render.Print(message, opts)
+		render.Print(line, opts)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -122,17 +124,25 @@ func handleInput(level string, args []string) {
 	if (stat.Mode() & os.ModeCharDevice) == 0 {
 		scanner = bufio.NewScanner(os.Stdin)
 	} else {
+		//TODO: maybe we also handle file paths? in which case we want to close handle
 		scanner = bufio.NewScanner(strings.NewReader(getBody(args)))
 	}
 
-	f := true
+	i := 0
 	for scanner.Scan() {
 		body := scanner.Text()
-		if f {
+		if i == 0 {
 			body = indentOutput(body, opts.ShortHeading)
 		}
-		f = false
-		render.Print(body, opts)
+		i++
+
+		m := &logging.Message{
+			Line:    i,
+			Level:   level,
+			Message: body,
+		}
+
+		render.Print(m, opts)
 	}
 
 	if opts.Level == "fatal" {
