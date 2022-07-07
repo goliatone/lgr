@@ -96,10 +96,14 @@ func handleLogStream(args []string) error {
 
 	i := 0
 	for scanner.Scan() {
-		line, err := parser.Parse(scanner.Bytes())
+		b := scanner.Bytes()
+		line, err := parser.Parse(b)
 		if err != nil {
-			return err
+			//TODO: we need to implement a proper passthrough
+			fmt.Println(string(b))
+			continue
 		}
+
 		i++
 
 		line.Line = i
