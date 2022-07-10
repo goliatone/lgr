@@ -17,6 +17,8 @@ func init() {
 
 }
 
+const defaultExecHeading = "executing"
+
 var execCmd = &cobra.Command{
 	Use:     "exec [text|stdin]",
 	Aliases: []string{"cmd"},
@@ -31,10 +33,9 @@ failure message.
 	`,
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
+		heading, args := getCmdArgs(os.Args[2:], args)
 
-		opts.ShortHeading = true
-
-		label := "executing: " + strings.Join(args, " ")
+		label := heading + ": " + strings.Join(args, " ")
 
 		name, params := makeExecParams(args)
 		run := exec.Command(name, params...)
@@ -43,6 +44,7 @@ failure message.
 		var out bytes.Buffer
 		run.Stdout = &out
 		run.Stderr = &out
+
 		//TODO: make configurable via flags
 		widget := spinner.New(
 			spinner.WithLabel(label),
@@ -79,23 +81,34 @@ failure message.
 			return
 		}
 
-		opts.WithIndent()
+		opts.
+			WithIndent().
+			WithHeadingSuffix("")
+
 		handleInput("info", []string{content})
 	},
 }
 
-func makeExecParams(args []string) (string, []string) {
+func getCmdArgs(o, c []string) (string, []string) {
 
+	for i := len(o) - 1; i >= 0; i-- {
+		arg := o[i]
+		if arg == "--" {
+			if i == 0 {
+				return defaultExecHeading, o[i+1:]
+			}
+			return strings.Join(c[0:i-2], " "), o[i+1:]
+		}
+	}
+
+	return defaultExecHeading, c
+}
+
+func makeExecParams(args []string) (string, []string) {
 	return args[0], args[1:]
 }
 
 func indentOutput(input string, short bool) string {
-	indentLength := 6
-	if short {
-		indentLength = 3
-	}
-	indent := fmt.Sprintf("%*s", indentLength, "")
-
 	out := []string{}
 
 	lines := strings.Split(strings.TrimRight(input, "\n"), "\n")
@@ -103,12 +116,7 @@ func indentOutput(input string, short bool) string {
 	lineDigits := countDigits(len(lines))
 	for i, l := range lines {
 		l = strings.TrimLeft(l, " ")
-		if i == 0 {
-			out = append(out, fmt.Sprintf("%s%s", fmt.Sprintf("%*s", lineDigits-1, ""), l))
-		} else {
-			// out = append(out, fmt.Sprintf("   [%0*d] %s", lineDigits, i, l))
-			out = append(out, fmt.Sprintf("%s[%0*d] %s", indent, lineDigits, i, l))
-		}
+		out = append(out, fmt.Sprintf("[%0*d] %s", lineDigits, i+1, l))
 	}
 
 	return strings.Join(out, "\n")
