@@ -21,6 +21,7 @@ type Options struct {
 	Heading         string
 	ShortHeading    bool
 	HeadingPrefix   string
+	HeadingSuffix   string
 	NoNewline       bool
 	NoTimestamp     bool
 	Modifiers       *[]string
@@ -34,8 +35,15 @@ var IndentationChar string = " └─"
 var TimestampFormat = "01-02-2006 15:04:05.000000"
 
 //WithIndent sets heading with indent option
-func (o *Options) WithIndent() {
+func (o *Options) WithIndent() *Options {
 	o.HeadingPrefix = IndentationChar
+	return o
+}
+
+//WithHeadingSuffix sets heading suffix
+func (o *Options) WithHeadingSuffix(s string) *Options {
+	o.HeadingSuffix = s
+	return o
 }
 
 //HasIndent returns true if heading has indent
@@ -62,12 +70,14 @@ func styleHeading(heading string, opts *Options) string {
 
 	if style, ok := headingStyle[opts.Level]; ok {
 		heading = style.Paint(heading)
-		heading += " "
 	}
 
-	if opts.HeadingPrefix != "" {
+	heading += opts.HeadingSuffix
+
+	if opts.HasIndent() {
 		heading = opts.HeadingPrefix + heading
 	}
+
 	return heading
 }
 
@@ -94,7 +104,6 @@ func Stylize(msg *logging.Message, opts *Options) (string, string) {
 		if opts.HasIndent() {
 			ts = strings.Repeat(" ", utf8.RuneCountInString(opts.TimestampFormat))
 		}
-
 		heading = fmt.Sprintf("%s %s", ts, heading)
 	}
 
