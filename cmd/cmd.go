@@ -94,10 +94,12 @@ func getCmdArgs(o, c []string) (string, []string) {
 	for i := len(o) - 1; i >= 0; i-- {
 		arg := o[i]
 		if arg == "--" {
+
 			if i == 0 {
 				return defaultExecHeading, o[i+1:]
 			}
-			return strings.Join(c[0:i-2], " "), o[i+1:]
+			r := o[i+1:]
+			return strings.Join(c[0:len(r)], " "), r
 		}
 	}
 
