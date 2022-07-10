@@ -69,8 +69,9 @@ type LineParser interface {
 }
 
 //TODO: Make configurable
-var timestampKeys = []string{"ts", "time", "timestamp", "date"}
+var timestampKeys = []string{"ts", "time", "timestamp", "date", "@timestamp"}
 var messageKeys = []string{"message", "msg"}
+var levelKeys = []string{"level", "log.level"}
 
 //JSONLineParser implements LineParser
 type JSONLineParser struct {
@@ -98,8 +99,10 @@ func (p JSONLineParser) Parse(line []byte) (*Message, error) {
 		}
 	}
 
-	if !parseLevelString(m, data, "level") {
-		parseLevelInt(m, data, "level")
+	for _, key := range levelKeys {
+		if !parseLevelString(m, data, key) {
+			parseLevelInt(m, data, key)
+		}
 	}
 
 	for _, key := range messageKeys {

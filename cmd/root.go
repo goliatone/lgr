@@ -66,7 +66,9 @@ var opts *render.Options
 const maxBufferSize = 32 * 1024
 
 func init() {
-	opts = &render.Options{}
+	opts = &render.Options{
+		HeadingSuffix: " ",
+	}
 
 	rootCmd.PersistentFlags().StringVarP(&opts.Color, "color", "c", "neutral", "line color")
 	rootCmd.PersistentFlags().StringVarP(&opts.Level, "level", "l", "trace", "log level")
@@ -135,9 +137,6 @@ func handleInput(level string, args []string) {
 	i := 0
 	for scanner.Scan() {
 		body := scanner.Text()
-		if i == 0 {
-			body = indentOutput(body, opts.ShortHeading)
-		}
 		i++
 
 		m := &logging.Message{
