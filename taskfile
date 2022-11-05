@@ -33,9 +33,127 @@ function dev:test {
     go test ./... -v
 }
 
+function test:lgr {
+    lgr I "running test run"
+    echo ""
+    test:run
+    lgr I "test run complete"
+}
+
+function test:run {
+    echo "start:" "$(date)"
+    echo "Info example"
+    sleep 1
+    # dev:build
+    wrk:dev
+
+    echo "This is a very long line and it should not mess with the label but I guess it could still be longer because it did not break anything or reach the end of the screen...."
+    for i in {0..2}
+    do
+    echo "Number: $i"
+    done
+
+
+    echo "more stuff"
+    echo "end: " "$(date)"
+    exit 1
+}
+
+##
+## -----
+##
+## ci:build
+##
+## Get version from meta file.
+function dev:build {
+
+    VERSION=$(version:get)
+    BUILD_DATE=$(date -u +%Y%m%d.%H%M%S)
+
+    LDFLAGS="-X '${PROJECT}/pkg/version.Tag=dev-${VERSION}' -X '${PROJECT}/pkg/version.Time=${BUILD_DATE}' -X '${PROJECT}/pkg/version.User=$(id -u -n)'"
+
+    echo "building version: ${VERSION}"
+    echo "go build -ldflags ${LDFLAGS}"
+    # exit 133
+    #exit 1
+    go build -ldflags "${LDFLAGS}" -o "${BINPATH}/${BINNAME}" "${ENTRYPOINT}"
+}
+
 function wrk:dev {
-    gvm use go1.17
-    gvm pkgset use lgr
+    lgr "gvm use go1.17.6"
+    lgr "gvm pkgset use lgr"
+}
+
+
+function _test {
+    ci:build
+
+    lgr -b -n "This is a bold heading "; lgr -c hi-magenta "and this is a bold and magenta heading"
+    lgr debug "Info example"
+    lgr -b debug "Info example and bold..."
+    lgr -S info "Info example"
+    lgr -S warn "This is a warning, should be all yellow"
+    _err "This is an error! should be all red..."
+    lgr -S fatal "This is an error! should be all red..."
+
+    lgr E "This is an error! should be all red..."
+    lgr F "This fatal..."
+
+    lgr -H "<LGR>" "Use custom headings"
+
+    lgr -m green -m bold  "✨ This is a warning, should be all yellow"
+    lgr -n -m bold -m cyan "bold cyan"; lgr -n -m hi-magenta -m italic "and italic and magenta"
+    lgr -m bg-red -m grey -m bold "and italic and magenta"
+
+    lgr -m underline -m black -m bold "and italic and magenta"
+
+    _lp | lgr warn
+
+    curl google.com | lgr info "My CURL:"
+
+    lgr bar 10
+    sleep .2
+    lgr bar 20
+    sleep .2
+    lgr bar 40
+    sleep .2
+    lgr bar 50
+    sleep .2
+    lgr bar 90
+    sleep .2
+    lgr bar 100 -d "Task completed..."
+
+    lgr OK "Success with standar style"
+    lgr KO "Not a success"
+
+    lgr success "Success with long style"
+    lgr failure "Not a successs with long style"
+
+    lgr OK -H " 🚀" "Or a successful custom heading..."
+
+    lgr exec ./taskfile test:run
+
+    lgr box "Hello Box!\n\nThis is some content\nbut not sure where to go.\n\nAnd sometimes we have more to say." --style "round" -a "left"
+    lgr box "Hello Box!\n\nThis is some content\nthat goes in a box.\n\nAnd with a nice footer." --style "classic" -a "center"
+    lgr box "Hello Box!\n\nThis is some content\nthat goes in a box.\n\nAnd with a nice footer." --style "double" -a "right"
+
+    local msg
+    msg=$(lgr -m bg-red -m grey -m bold "and italic and magenta")
+    lgr box "Hello Style\n\n${msg}" --style "double" -a "center"
+
+}
+
+function _t2 {
+    # lgr -m bg-red -m grey -m bold "and italic and magenta" | xargs lgr box --style "double" -a "center"
+    lgr -m bg-red -m grey -m bold "and italic and magenta" | xargs -0 ./bin/lgr box
+}
+
+function _err {
+    lgr error -S "$@"
+}
+
+function _lp {
+    echo "This is the output from a call"
 }
 
 ## ########################################
@@ -66,7 +184,7 @@ function release:build {
 
     mkdir -p ${RELBIN}
 
-    LDFLAGS="-s -w -X '${PROJECT}/pkg/version.Tag=${VERSION}' -X '${PROJECT}/pkg/version.Time=${BUILD_DATE}' -X '${PROJECT}/pkg/version.User=$(id -u -n)'"
+    LDFLAGS="-s -w -X '${PROJECT}/pkg/version.Tag=v${VERSION}' -X '${PROJECT}/pkg/version.Time=${BUILD_DATE}' -X '${PROJECT}/pkg/version.User=$(id -u -n)'"
 
     echo "go build -ldflags ${LDFLAGS}"
 
@@ -85,6 +203,14 @@ function release:build {
 ## @arg 1 {string} [level=patch]
 ##        Accepted major, minor, patch
 function release {
+
+    # if [[ $(git diff --stat) != '' ]]; then
+    #     lgr KO "Repository has uncommited work."
+    #     lgr KO "Commit or stash before releasing..."
+    #     lgr fatal "This should exit with error"
+    #     exit 1
+    # fi
+
     local tag
     local level
     local message
@@ -108,7 +234,8 @@ function release {
     git tag -a "v${tag}" -m "${message}"
 
     # Push tags and trigger release 🚀 🥳
-    git push --tags
+    git push origin tag "v${tag}"
+    # git push --tags
 
     git push
 }
