@@ -40,26 +40,65 @@ function wrk:dev {
 }
 
 function example {
-    
-    ./bin/darwin/lgr I "This is an example of how to do stuff..."
-    ./bin/darwin/lgr E "This is an error"
-    ./bin/darwin/lgr W "Not sure how this"
-    ./bin/darwin/lgr exec -- ls .
-    ./bin/darwin/lgr ok "This is ok"
-    ./bin/darwin/lgr ko "This is KO"
-    ./bin/darwin/lgr info "This is an example of how to do stuff..."
-    ./bin/darwin/lgr error "This is an error"
-    ./bin/darwin/lgr fatal "This is KO"
-    ./bin/darwin/lgr warn "Not sure how this"
-    ./bin/darwin/lgr success "This is KO"
-    ./bin/darwin/lgr failure "This is KO"
-    ./bin/darwin/lgr box "Not sure how this"
-    ./bin/darwin/lgr box -a left --style round "A round box"
+    _lgr="./bin/darwin/lgr"
+
+    export LGR_NO_TIMESTAMP=true
+
+    # 03:04:05.000
+    $_lgr I "This is an example of how to do stuff..."
+    $_lgr E "This is an error"
+    $_lgr W "Not sure how this"
+    $_lgr exec -- ls .
+    $_lgr ok "This is ok"
+    $_lgr ko "This is KO"
+    $_lgr info "This is an example of how to do stuff..."
+    $_lgr error "This is an error"
+    $_lgr fatal "This is KO"
+    $_lgr warn "Not sure how this"
+    $_lgr success "This is KO"
+    $_lgr failure "This is KO"
+    $_lgr box "Not sure how this"
+    $_lgr box -a left --style round "A round box"
     fatal
-    for i in {10..100..10}; do
-        sleep .1
-	    ./bin/darwin/lgr bar "$i"
-    done
+
+    sleep 1
+    curl http://example.com | $_lgr info "My CURL:"
+
+    sleep 1
+
+    $_lgr bar 10
+    sleep .2
+    $_lgr bar 20
+    sleep .2
+    $_lgr bar 40
+    sleep .2
+    $_lgr bar 50
+    sleep .2
+    $_lgr bar 90
+    sleep .2
+    $_lgr bar 100 -d "Task completed..."
+
+    sleep 1
+
+    $_lgr OK "Success with standar style"
+    $_lgr KO "Not a success"
+
+    $_lgr success "Success with long style"
+    $_lgr failure "Not a successs with long style"
+
+    $_lgr OK -H " 🚀" "Or a successful custom heading..."
+
+    sleep 1
+    $_lgr exec ./taskfile dev:test
+
+    sleep 1
+    $_lgr box "Hello Box!\n\nThis is some content\nbut not sure where to go.\n\nAnd sometimes we have more to say." --style "round" -a "left"
+    $_lgr box "Hello Box!\n\nThis is some content\nthat goes in a box.\n\nAnd with a nice footer." --style "classic" -a "center"
+    $_lgr box "Hello Box!\n\nThis is some content\nthat goes in a box.\n\nAnd with a nice footer." --style "double" -a "right"
+
+    local msg
+    msg=$($_lgr -m bg-red -m grey -m bold "and italic and magenta")
+    $_lgr box "Hello Style\n\n${msg}" --style "double" -a "center"
 }
 
 function fatal {
@@ -152,6 +191,14 @@ function release {
     local tag
     local level
     local message
+
+    # Fetch all changes from origin
+    git fetch --all
+    # Make sure we have the latest version file
+    git checkout origin/master -- ".version"
+
+    # Pull tags to make sure we have
+    git pull --tags -f
 
     level=${1:-"patch"}
 
