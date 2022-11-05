@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -77,8 +78,18 @@ var levelKeys = []string{"level", "log.level"}
 type JSONLineParser struct {
 }
 
+func dropNonJSON(b []byte) []byte {
+	s := bytes.IndexRune(b, '{')
+	if s == -1 {
+		return b
+	}
+	return b[s:]
+}
+
 //Parse will parse a JSON formatted log line
 func (p JSONLineParser) Parse(line []byte) (*Message, error) {
+
+	line = dropNonJSON(line)
 
 	m := &Message{}
 	var data MessageData
