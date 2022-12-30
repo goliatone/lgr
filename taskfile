@@ -33,132 +33,117 @@ function dev:test {
     go test ./... -v
 }
 
-function test:lgr {
-    lgr I "running test run"
-    echo ""
-    test:run
-    lgr I "test run complete"
-}
-
-function test:run {
-    echo "start:" "$(date)"
-    echo "Info example"
-    sleep 1
-    # dev:build
-    wrk:dev
-
-    echo "This is a very long line and it should not mess with the label but I guess it could still be longer because it did not break anything or reach the end of the screen...."
-    for i in {0..2}
-    do
-    echo "Number: $i"
-    done
-
-
-    echo "more stuff"
-    echo "end: " "$(date)"
-    exit 1
-}
-
-##
-## -----
-##
-## ci:build
-##
-## Get version from meta file.
-function dev:build {
-
-    VERSION=$(version:get)
-    BUILD_DATE=$(date -u +%Y%m%d.%H%M%S)
-
-    LDFLAGS="-X '${PROJECT}/pkg/version.Tag=dev-${VERSION}' -X '${PROJECT}/pkg/version.Time=${BUILD_DATE}' -X '${PROJECT}/pkg/version.User=$(id -u -n)'"
-
-    echo "building version: ${VERSION}"
-    echo "go build -ldflags ${LDFLAGS}"
-    # exit 133
-    #exit 1
-    go build -ldflags "${LDFLAGS}" -o "${BINPATH}/${BINNAME}" "${ENTRYPOINT}"
-}
-
 function wrk:dev {
-    lgr "gvm use go1.17.6"
-    lgr "gvm pkgset use lgr"
+    gvm use go1.17.8
+    gvm pkgset use lgr
+    GOROOT=/home/goliatone/.gvm/gos/go1.17.8 ci .
 }
 
+function example {
+    _lgr="./bin/darwin/lgr"
 
-function _test {
-    ci:build
+    export LGR_NO_TIMESTAMP=true
 
-    lgr -b -n "This is a bold heading "; lgr -c hi-magenta "and this is a bold and magenta heading"
-    lgr debug "Info example"
-    lgr -b debug "Info example and bold..."
-    lgr -S info "Info example"
-    lgr -S warn "This is a warning, should be all yellow"
-    _err "This is an error! should be all red..."
-    lgr -S fatal "This is an error! should be all red..."
+    # 03:04:05.000
+    $_lgr I "This is an example of how to do stuff..."
+    $_lgr E "This is an error"
+    $_lgr W "Not sure how this"
+    $_lgr exec -- ls .
+    $_lgr ok "This is ok"
+    $_lgr ko "This is KO"
+    $_lgr info "This is an example of how to do stuff..."
+    $_lgr error "This is an error"
+    $_lgr fatal "This is KO"
+    $_lgr warn "Not sure how this"
+    $_lgr success "This is KO"
+    $_lgr failure "This is KO"
+    $_lgr box "Not sure how this"
+    $_lgr box -a left --style round "A round box"
+    fatal
 
-    lgr E "This is an error! should be all red..."
-    lgr F "This fatal..."
+    sleep 1
+    curl http://example.com | $_lgr info "My CURL:"
 
-    lgr -H "<LGR>" "Use custom headings"
+    sleep 1
 
-    lgr -m green -m bold  "✨ This is a warning, should be all yellow"
-    lgr -n -m bold -m cyan "bold cyan"; lgr -n -m hi-magenta -m italic "and italic and magenta"
-    lgr -m bg-red -m grey -m bold "and italic and magenta"
-
-    lgr -m underline -m black -m bold "and italic and magenta"
-
-    _lp | lgr warn
-
-    curl google.com | lgr info "My CURL:"
-
-    lgr bar 10
+    $_lgr bar 10
     sleep .2
-    lgr bar 20
+    $_lgr bar 20
     sleep .2
-    lgr bar 40
+    $_lgr bar 40
     sleep .2
-    lgr bar 50
+    $_lgr bar 50
     sleep .2
-    lgr bar 90
+    $_lgr bar 90
     sleep .2
-    lgr bar 100 -d "Task completed..."
+    $_lgr bar 100 -d "Task completed..."
 
-    lgr OK "Success with standar style"
-    lgr KO "Not a success"
+    sleep 1
 
-    lgr success "Success with long style"
-    lgr failure "Not a successs with long style"
+    $_lgr OK "Success with standar style"
+    $_lgr KO "Not a success"
 
-    lgr OK -H " 🚀" "Or a successful custom heading..."
+    $_lgr success "Success with long style"
+    $_lgr failure "Not a successs with long style"
 
-    lgr exec ./taskfile test:run
+    $_lgr OK -H " 🚀" "Or a successful custom heading..."
 
-    lgr box "Hello Box!\n\nThis is some content\nbut not sure where to go.\n\nAnd sometimes we have more to say." --style "round" -a "left"
-    lgr box "Hello Box!\n\nThis is some content\nthat goes in a box.\n\nAnd with a nice footer." --style "classic" -a "center"
-    lgr box "Hello Box!\n\nThis is some content\nthat goes in a box.\n\nAnd with a nice footer." --style "double" -a "right"
+    sleep 1
+    $_lgr exec ./taskfile dev:test
+
+    sleep 1
+    $_lgr box "Hello Box!\n\nThis is some content\nbut not sure where to go.\n\nAnd sometimes we have more to say." --style "round" -a "left"
+    $_lgr box "Hello Box!\n\nThis is some content\nthat goes in a box.\n\nAnd with a nice footer." --style "classic" -a "center"
+    $_lgr box "Hello Box!\n\nThis is some content\nthat goes in a box.\n\nAnd with a nice footer." --style "double" -a "right"
 
     local msg
-    msg=$(lgr -m bg-red -m grey -m bold "and italic and magenta")
-    lgr box "Hello Style\n\n${msg}" --style "double" -a "center"
-
+    msg=$($_lgr -m bg-red -m grey -m bold "and italic and magenta")
+    $_lgr box "Hello Style\n\n${msg}" --style "double" -a "center"
 }
 
-function _t2 {
-    # lgr -m bg-red -m grey -m bold "and italic and magenta" | xargs lgr box --style "double" -a "center"
-    lgr -m bg-red -m grey -m bold "and italic and magenta" | xargs -0 ./bin/lgr box
+function fatal {
+    (fail) || ./bin/darwin/lgr fatal --exit-code $? "failed with exit code $?"
 }
 
-function _err {
-    lgr error -S "$@"
-}
-
-function _lp {
-    echo "This is the output from a call"
+function fail {
+    ./bin/darwin/lgr I "calling fail function..."
+    exit 123
 }
 
 ## ########################################
 ##                 Build
 ## ########################################
+
+## -----
+## build
+##
+## Install binary and service on host machine.
+## We can pass an env file with values that will
+## be available for the running service.
+##
+## Globals:
+##  PROJECT - $PROJECT
+##  BINNAME
+##  ENTRYPOINT
+##
+## Arguments:
+## @arg 1 {string} [tag=0.0.1]
+function build {
+    echo ""
+    echo "running build..."
+
+    VERSION=$(version:get)
+    BUILD_DATE=$(date -u +%Y%m%d.%H%M%S)
+    RELBIN="./bin/darwin"
+
+    mkdir -p ${RELBIN}
+
+    LDFLAGS="-s -w -X '${PROJECT}/pkg/version.Tag=${VERSION}' -X '${PROJECT}/pkg/version.Time=${BUILD_DATE}' -X '${PROJECT}/pkg/version.User=$(id -u -n)'"
+
+    echo "go build -ldflags ${LDFLAGS}"
+
+    go build -ldflags "${LDFLAGS}" -o "${RELBIN}/${BINNAME}" "${ENTRYPOINT}"
+}
 
 ## -----
 ## release:build
@@ -178,13 +163,13 @@ function release:build {
     echo ""
     echo "running release:build..."
 
-    VERSION=$(version:upsert $1)
+    VERSION=$(version:upsert "$1")
     BUILD_DATE=$(date -u +%Y%m%d.%H%M%S)
     RELBIN="./bin/darwin"
 
     mkdir -p ${RELBIN}
 
-    LDFLAGS="-s -w -X '${PROJECT}/pkg/version.Tag=v${VERSION}' -X '${PROJECT}/pkg/version.Time=${BUILD_DATE}' -X '${PROJECT}/pkg/version.User=$(id -u -n)'"
+    LDFLAGS="-s -w -X '${PROJECT}/pkg/version.Tag=${VERSION}' -X '${PROJECT}/pkg/version.Time=${BUILD_DATE}' -X '${PROJECT}/pkg/version.User=$(id -u -n)'"
 
     echo "go build -ldflags ${LDFLAGS}"
 
@@ -203,17 +188,17 @@ function release:build {
 ## @arg 1 {string} [level=patch]
 ##        Accepted major, minor, patch
 function release {
-
-    # if [[ $(git diff --stat) != '' ]]; then
-    #     lgr KO "Repository has uncommited work."
-    #     lgr KO "Commit or stash before releasing..."
-    #     lgr fatal "This should exit with error"
-    #     exit 1
-    # fi
-
     local tag
     local level
     local message
+
+    # Fetch all changes from origin
+    git fetch --all
+    # Make sure we have the latest version file
+    git checkout origin/master -- ".version"
+
+    # Pull tags to make sure we have
+    git pull --tags -f
 
     level=${1:-"patch"}
 
@@ -234,8 +219,7 @@ function release {
     git tag -a "v${tag}" -m "${message}"
 
     # Push tags and trigger release 🚀 🥳
-    git push origin tag "v${tag}"
-    # git push --tags
+    git push --tags
 
     git push
 }
@@ -415,7 +399,7 @@ function install:ubuntu {
     sudo dpkg -i lgr_${tag}_linux_x86_64.deb
     sleep 1
     echo ""
-    echo $(lgr -v)
+    lgr version
     echo ""
 }
 

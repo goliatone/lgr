@@ -7,6 +7,9 @@ import (
 )
 
 func init() {
+
+	fatalCmd.Flags().IntVar(&errorExitCode, "exit-code", 1, "error exit code")
+
 	rootCmd.AddCommand(fatalCmd)
 	rootCmd.AddCommand(errorCmd)
 	rootCmd.AddCommand(warnCmd)

@@ -100,8 +100,11 @@ func cmdExec(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	opts.WithIndent()
-	handleInput("info", []string{content})
+    opts.
+        WithIndent().
+        WithHeadingSuffix("")
+
+    handleInput("info", []string{content})
 
 	return nil
 }

@@ -7,22 +7,43 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/goliatone/lgr/pkg/logging"
 )
 
 func TestPrint(t *testing.T) {
+
 	type args struct {
-		body string
-		opts *Options
+		msg  logging.Message
+		opts Options
 	}
+
 	tests := []struct {
 		name string
 		args args
 	}{
 		// TODO: Add test cases.
+		{
+			name: "test",
+			args: args{
+				msg: logging.Message{
+					Message:   "this is a test",
+					Level:     "debug",
+					Timestamp: nil,
+				},
+				opts: Options{
+					Level:           "debug",
+					Color:           "neutral",
+					Heading:         "H",
+					Bold:            false,
+					TimestampFormat: TimestampFormat,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Print(tt.args.body, tt.args.opts)
+			Print(&tt.args.msg, &tt.args.opts)
 		})
 	}
 }
