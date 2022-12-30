@@ -15,6 +15,12 @@ import (
 	"golang.org/x/term"
 )
 
+func init() {
+	rootCmd.AddCommand(execCmd)
+}
+
+const defaultExecHeading = "executing"
+
 var execCmd = &cobra.Command{
 	Use:     "exec [text|stdin]",
 	Aliases: []string{"cmd"},
@@ -31,14 +37,12 @@ failure message.
 	RunE: cmdExec,
 }
 
-func init() {
-	rootCmd.AddCommand(execCmd)
-
-}
-
 func cmdExec(cmd *cobra.Command, args []string) error {
+	heading, args := getCmdArgs(os.Args[2:], args)
 
-	opts.ShortHeading = true
+	label := heading + ": " + strings.Join(args, " ")
+
+	// opts.ShortHeading = true
 
 	var output strings.Builder
 	output.WriteString(strings.Join(args, " ") + "\n")
@@ -65,9 +69,6 @@ func cmdExec(cmd *cobra.Command, args []string) error {
 	)
 	defer widget.Close()
 
-	heading := widget.ApplyStyle("output")
-	label := widget.ApplyStyle("command ") + strings.Join(args, " ")
-
 	widget.SetLabel(label)
 
 	done := stdoutScanner(heading, stdout, &output, widget)
@@ -84,7 +85,7 @@ func cmdExec(cmd *cobra.Command, args []string) error {
 		handleInput("failure", []string{"error: " + err.Error()})
 
 		opts.WithIndent()
-		content := indentOutput(output.String(), opts.ShortHeading)
+		content := indentOutput(err.Error()+"\n"+output.String(), opts.ShortHeading)
 		handleInput("error", []string{content})
 
 		if exitError, ok := err.(*exec.ExitError); ok {
@@ -93,18 +94,18 @@ func cmdExec(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	handleInput("success", []string{"success"})
+	handleInput("success", []string{"success " + label})
 
 	content := indentOutput(output.String(), opts.ShortHeading)
 	if content == "" {
 		return nil
 	}
 
-    opts.
-        WithIndent().
-        WithHeadingSuffix("")
+	opts.
+		WithIndent().
+		WithHeadingSuffix("")
 
-    handleInput("info", []string{content})
+	handleInput("info", []string{content})
 
 	return nil
 }
@@ -126,18 +127,28 @@ func stdoutScanner(heading string, stdout io.Reader, output *strings.Builder, wi
 	return done
 }
 
-func makeExecParams(args []string) (string, []string) {
+func getCmdArgs(o, c []string) (string, []string) {
 
+	for i := len(o) - 1; i >= 0; i-- {
+		arg := o[i]
+		if arg == "--" {
+
+			if i == 0 {
+				return defaultExecHeading, o[i+1:]
+			}
+			r := o[i+1:]
+			return strings.Join(c[0:len(r)], " "), r
+		}
+	}
+
+	return defaultExecHeading, c
+}
+
+func makeExecParams(args []string) (string, []string) {
 	return args[0], args[1:]
 }
 
 func indentOutput(input string, short bool) string {
-	indentLength := 6
-	if short {
-		indentLength = 3
-	}
-	indent := fmt.Sprintf("%*s", indentLength, "")
-
 	out := []string{}
 
 	lines := strings.Split(strings.TrimRight(input, "\n"), "\n")
@@ -145,12 +156,7 @@ func indentOutput(input string, short bool) string {
 	lineDigits := countDigits(len(lines))
 	for i, l := range lines {
 		l = strings.TrimLeft(l, " ")
-		if i == 0 {
-			out = append(out, fmt.Sprintf("%s%s", fmt.Sprintf("%*s", lineDigits-1, ""), l))
-		} else {
-			// out = append(out, fmt.Sprintf("   [%0*d] %s", lineDigits, i, l))
-			out = append(out, fmt.Sprintf("%s[%0*d] %s", indent, lineDigits, i, l))
-		}
+		out = append(out, fmt.Sprintf("[%0*d] %s", lineDigits, i+1, l))
 	}
 
 	return strings.Join(out, "\n")
