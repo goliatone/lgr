@@ -56,6 +56,7 @@ Environment variable options:
   * LGR_SHORT_HEADLINES: --short-headlines
   * LGR_NO_TIMESTAMP: 	 --no-timestamp
   * LGR_TIME_FORMAT: 	 --time-format
+  * LGR_MAX_BUFFER: 	 --max-buffer
   `,
 	Example: `
 	lgr error 'This is an error message'
@@ -80,7 +81,7 @@ Environment variable options:
 var errorExitCode = 1
 var opts *render.Options
 
-var maxBufferSize = 5 * 1024 * 1024 //5MB buffer size
+var maxBufferSize = 5 //5MB buffer size
 
 func init() {
 	opts = &render.Options{
@@ -160,8 +161,8 @@ func init() {
 	pf.IntVar(
 		&opts.MaxBufferSize,
 		"max-buffer",
-		getEnvInt("LGR_MAX_BUFFERR", maxBufferSize),
-		"max line buffer size",
+		getEnvInt("LGR_MAX_BUFFER", maxBufferSize),
+		"max line buffer size in Mb",
 	)
 
 	opts.Modifiers = pf.StringSliceP(
@@ -188,7 +189,7 @@ func Execute() {
 func handleLogStream(args []string) error {
 	parser := logging.JSONLineParser{}
 	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Buffer([]byte{}, maxBufferSize)
+	scanner.Buffer([]byte{}, opts.MaxBufferSize*1024*1024)
 
 	i := 0
 	for scanner.Scan() {
@@ -228,7 +229,7 @@ func handleInput(level string, args []string) {
 		scanner = bufio.NewScanner(strings.NewReader(getBody(args)))
 	}
 
-	scanner.Buffer([]byte{}, maxBufferSize)
+	scanner.Buffer([]byte{}, opts.MaxBufferSize*1024*1024)
 
 	i := 0
 	for scanner.Scan() {
