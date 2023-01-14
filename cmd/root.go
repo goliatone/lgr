@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/goliatone/lgr/pkg/logging"
@@ -79,7 +80,7 @@ Environment variable options:
 var errorExitCode = 1
 var opts *render.Options
 
-const maxBufferSize = 32 * 1024
+var maxBufferSize = 5 * 1024 * 1024 //5MB buffer size
 
 func init() {
 	opts = &render.Options{
@@ -156,6 +157,13 @@ func init() {
 		"timestamp format",
 	)
 
+	pf.IntVar(
+		&opts.MaxBufferSize,
+		"max-buffer",
+		getEnvInt("LGR_MAX_BUFFERR", maxBufferSize),
+		"max line buffer size",
+	)
+
 	opts.Modifiers = pf.StringSliceP(
 		"modifier",
 		"m",
@@ -180,7 +188,7 @@ func Execute() {
 func handleLogStream(args []string) error {
 	parser := logging.JSONLineParser{}
 	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Buffer(make([]byte, maxBufferSize), maxBufferSize) // 32k
+	scanner.Buffer([]byte{}, maxBufferSize)
 
 	i := 0
 	for scanner.Scan() {
@@ -219,6 +227,8 @@ func handleInput(level string, args []string) {
 		//TODO: maybe we also handle file paths? in which case we want to close handle
 		scanner = bufio.NewScanner(strings.NewReader(getBody(args)))
 	}
+
+	scanner.Buffer([]byte{}, maxBufferSize)
 
 	i := 0
 	for scanner.Scan() {
@@ -261,4 +271,17 @@ func getEnvBool(key string, def bool) bool {
 		return def
 	}
 	return v == "true"
+}
+
+func getEnvInt(key string, def int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+
+	o, err := strconv.Atoi(v)
+	if err != nil {
+		return def
+	}
+	return o
 }
