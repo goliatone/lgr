@@ -26,6 +26,7 @@ type Options struct {
 	NoTimestamp     bool
 	Modifiers       *[]string
 	TimestampFormat string
+	MaxBufferSize   int
 }
 
 //IndentationChar is the character used for indentation
