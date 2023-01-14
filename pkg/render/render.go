@@ -27,6 +27,7 @@ type Options struct {
 	Modifiers       *[]string
 	TimestampFormat string
 	MaxBufferSize   int
+	Writer          io.Writer
 }
 
 //IndentationChar is the character used for indentation
@@ -146,10 +147,7 @@ func Stylize(msg *logging.Message, opts *Options) (string, string) {
 //Print will render content to stdout
 func Print(msg *logging.Message, opts *Options) {
 	heading, content := Stylize(msg, opts)
-	//TODO: use writer
-	// fmt.Fprint(w io.Writer, a ...interface{})
-
-	fmt.Printf("%s%s", heading, content)
+	fmt.Fprintf(opts.Writer, "%s%s", heading, content)
 }
 
 func checkInput(f *os.File) (bool, error) {

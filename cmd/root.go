@@ -86,6 +86,7 @@ var maxBufferSize = 5 //5MB buffer size
 func init() {
 	opts = &render.Options{
 		HeadingSuffix: " ",
+		Writer:        os.Stdout,
 	}
 
 	pf := rootCmd.PersistentFlags()
@@ -196,7 +197,6 @@ func handleLogStream(args []string) error {
 		b := scanner.Bytes()
 		line, err := parser.Parse(b)
 		if err != nil {
-			//TODO: we need to implement a proper passthrough
 			fmt.Println(string(b))
 			continue
 		}
@@ -225,7 +225,6 @@ func handleInput(level string, args []string) {
 	if (stat.Mode() & os.ModeCharDevice) == 0 {
 		scanner = bufio.NewScanner(os.Stdin)
 	} else {
-		//TODO: maybe we also handle file paths? in which case we want to close handle
 		scanner = bufio.NewScanner(strings.NewReader(getBody(args)))
 	}
 
