@@ -72,7 +72,7 @@ type LineParser interface {
 //TODO: Make configurable
 var timestampKeys = []string{"ts", "time", "timestamp", "date", "@timestamp"}
 var messageKeys = []string{"message", "msg"}
-var levelKeys = []string{"level", "log.level"}
+var levelKeys = []string{"level", "log.level", "severity"}
 
 //JSONLineParser implements LineParser
 type JSONLineParser struct {
