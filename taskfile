@@ -129,20 +129,22 @@ function fail {
 ## Arguments:
 ## @arg 1 {string} [tag=0.0.1]
 function build {
-    echo ""
-    echo "running build..."
+    lgr "running build..."
+
+    RELBIN="./bin/darwin"
 
     VERSION=$(version:get)
-    BUILD_DATE=$(date -u +%Y%m%d.%H%M%S)
-    RELBIN="./bin/darwin"
+    BUILD_DATE=$(date -u +%FT%TZ)
+    BUILD_COMMIT=$(git rev-parse HEAD)
+    BUILD_USER=$(id -u -n)
 
     mkdir -p ${RELBIN}
 
-    LDFLAGS="-s -w -X '${PROJECT}/pkg/version.Tag=${VERSION}' -X '${PROJECT}/pkg/version.Time=${BUILD_DATE}' -X '${PROJECT}/pkg/version.User=$(id -u -n)'"
+    LDFLAGS="-s -w -X '${PROJECT}/pkg/version.Tag=${VERSION}' -X '${PROJECT}/pkg/version.Time=${BUILD_DATE}' -X '${PROJECT}/pkg/version.User=${BUILD_USER}' -X '${PROJECT}/pkg/version.Commit=${BUILD_COMMIT}'"
 
-    echo "go build -ldflags ${LDFLAGS}"
+    lgr "go build -ldflags ${LDFLAGS}"
 
-    go build -ldflags "${LDFLAGS}" -o "${RELBIN}/${BINNAME}" "${ENTRYPOINT}"
+    lgr exec -- go build -ldflags "${LDFLAGS}" -o "${RELBIN}/${BINNAME}" "${ENTRYPOINT}"
 }
 
 ## -----
@@ -163,13 +165,16 @@ function release:build {
     echo ""
     echo "running release:build..."
 
-    VERSION=$(version:upsert "$1")
-    BUILD_DATE=$(date -u +%Y%m%d.%H%M%S)
     RELBIN="./bin/darwin"
+
+    VERSION=$(version:upsert "$1")
+    BUILD_DATE=$(date -u +%FT%TZ)
+    BUILD_COMMIT=$(git rev-parse HEAD)
+    BUILD_USER=$(id -u -n)
 
     mkdir -p ${RELBIN}
 
-    LDFLAGS="-s -w -X '${PROJECT}/pkg/version.Tag=${VERSION}' -X '${PROJECT}/pkg/version.Time=${BUILD_DATE}' -X '${PROJECT}/pkg/version.User=$(id -u -n)'"
+    LDFLAGS="-s -w -X '${PROJECT}/pkg/version.Tag=${VERSION}' -X '${PROJECT}/pkg/version.Time=${BUILD_DATE}' -X '${PROJECT}/pkg/version.User=${BUILD_USER}' -X '${PROJECT}/pkg/version.Commit=${BUILD_COMMIT}'"
 
     echo "go build -ldflags ${LDFLAGS}"
 
