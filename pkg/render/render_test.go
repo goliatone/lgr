@@ -37,6 +37,7 @@ func TestPrint(t *testing.T) {
 					Heading:         "H",
 					Bold:            false,
 					TimestampFormat: TimestampFormat,
+					Writer:          os.Stdout,
 				},
 			},
 		},
