@@ -71,6 +71,8 @@ type Message struct {
 	Line      int             `json:"line"`
 }
 
+// WithFieldTemplate updates the template used to determine
+// how we render fields
 func (m Message) WithFieldTemplate(t string) {
 	for _, field := range m.Fields {
 		field.WithTemplate(t)
@@ -91,6 +93,7 @@ func (m Message) GetTimestampOrNow() *time.Time {
 	return m.Timestamp
 }
 
+// AddField will add a field to the message
 func (m *Message) AddField(key string, val interface{}) {
 	value, err := json.Marshal(val)
 	if err != nil {
@@ -106,6 +109,7 @@ func (m *Message) AddField(key string, val interface{}) {
 	}
 }
 
+// DeleteFields will remove fields from the message
 func (m *Message) DeleteFields(keys ...string) {
 	for _, key := range keys {
 		for index, field := range m.Fields {
@@ -116,6 +120,7 @@ func (m *Message) DeleteFields(keys ...string) {
 	}
 }
 
+// SortFields to ensure we have a consistent view of the meta
 func (m Message) SortFields() {
 	sort.Sort(sortableFields(m.Fields))
 }
