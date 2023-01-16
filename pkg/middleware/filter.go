@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"io/ioutil"
 	"strings"
 	"unicode/utf8"
@@ -54,24 +53,23 @@ func (f *FilterSet) Next(msg *logging.Message, opts *render.Options) bool {
 	return true
 }
 
-func NewFilterSet(filters []string) FilterSet {
+func NewFilterSet(filters []string) (FilterSet, error) {
 	o := []Filter{}
-	for _, f := range filters {
-		fmt.Printf("add script: %s\n", f)
-		if strings.HasPrefix(f, "@") {
-			script, err := ioutil.ReadFile(trimFirstRune(f))
+	for _, filter := range filters {
+		if strings.HasPrefix(filter, "@") {
+			file, err := ioutil.ReadFile(trimFirstRune(filter))
 			if err != nil {
-				continue
+				return FilterSet{}, err
 			}
-			o = append(o, Filter{Script: string(script)})
-		} else {
-			o = append(o, Filter{Script: f})
+			filter = string(file)
 		}
+
+		o = append(o, Filter{Script: filter})
 	}
 
 	return FilterSet{
 		filters: o,
-	}
+	}, nil
 }
 
 func trimFirstRune(s string) string {
