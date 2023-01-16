@@ -19,17 +19,30 @@ var numericLevelMap = map[int]string{
 	40: "warn",
 	50: "error",
 	60: "fatal",
+	70: "panic",
+}
+
+var levelNumberMap = map[string]int{
+	"trace":   10,
+	"debug":   20,
+	"info":    30,
+	"warn":    40,
+	"warning": 40,
+	"error":   50,
+	"err":     50,
+	"fatal":   60,
+	"panic":   70,
 }
 
 type FieldFormatter = func(format string, a ...any) string
 
-//MessageData encodes the log payload
+// MessageData encodes the log payload
 type MessageData = map[string]interface{}
 
-//MessageField hols key value fields
+// MessageField hols key value fields
 type MessageField struct {
-	Key   string
-	Value string
+	Key   string `json:"key"`
+	Value string `json:"value"`
 	tpl   string
 }
 
@@ -47,14 +60,15 @@ func (s sortableFields) Len() int           { return len(s) }
 func (s sortableFields) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s sortableFields) Less(i, j int) bool { return s[i].Key < s[j].Key }
 
-//Message holds fields from a log line
+// Message holds fields from a log line
 type Message struct {
-	Timestamp *time.Time
-	Level     string
-	Message   string
-	Caller    string
-	Fields    []*MessageField
-	Line      int
+	Timestamp *time.Time      `json:"timestamp"`
+	Level     string          `json:"label"`
+	Incidence int             `json:"level"`
+	Message   string          `json:"message"`
+	Caller    string          `json:"caller"`
+	Fields    []*MessageField `json:"fields"`
+	Line      int             `json:"line"`
 }
 
 func (m Message) WithFieldTemplate(t string) {
@@ -63,12 +77,12 @@ func (m Message) WithFieldTemplate(t string) {
 	}
 }
 
-//HasFields return true if there are extra fields
+// HasFields return true if there are extra fields
 func (m Message) HasFields() bool {
 	return len(m.Fields) > 0
 }
 
-//GetTimestampOrNow return given timestamp or now
+// GetTimestampOrNow return given timestamp or now
 func (m Message) GetTimestampOrNow() *time.Time {
 	if m.Timestamp == nil {
 		t := time.Now()
@@ -77,19 +91,19 @@ func (m Message) GetTimestampOrNow() *time.Time {
 	return m.Timestamp
 }
 
-//LineParser exposes a Parse method to
-//handle log entries
+// LineParser exposes a Parse method to
+// handle log entries
 type LineParser interface {
 	Parse(line []byte) (*Message, error)
 }
 
-//TODO: Make configurable
+// TODO: Make configurable
 var timestampKeys = []string{"ts", "time", "timestamp", "date", "@timestamp"}
 var messageKeys = []string{"message", "msg"}
 var levelKeys = []string{"level", "log.level", "severity"}
 var callerKeys = []string{"caller", "logger"}
 
-//JSONLineParser implements LineParser
+// JSONLineParser implements LineParser
 type JSONLineParser struct {
 }
 
@@ -101,7 +115,7 @@ func dropNonJSON(b []byte) []byte {
 	return b[s:]
 }
 
-//Parse will parse a JSON formatted log line
+// Parse will parse a JSON formatted log line
 func (p JSONLineParser) Parse(line []byte) (*Message, error) {
 
 	line = dropNonJSON(line)
@@ -129,6 +143,9 @@ func (p JSONLineParser) Parse(line []byte) (*Message, error) {
 		if !parseLevelString(m, data, key) {
 			parseLevelInt(m, data, key)
 		}
+		if i, ok := levelNumberMap[m.Level]; ok {
+			m.Incidence = i
+		}
 	}
 
 	for _, key := range messageKeys {
@@ -137,11 +154,11 @@ func (p JSONLineParser) Parse(line []byte) (*Message, error) {
 		}
 	}
 
-	// for _, key := range callerKeys {
-	// 	if parseCaller(m, data, key) {
-	// 		break
-	// 	}
-	// }
+	for _, key := range callerKeys {
+		if parseCaller(m, data, key) {
+			break
+		}
+	}
 
 	if len(data) > 0 {
 		for key, val := range data {
