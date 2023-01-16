@@ -16,9 +16,9 @@ var styleCmd = &cobra.Command{
 	lgr -m bg-red -m grey -m bold "and italic and magenta"
 	`,
 	Args: cobra.MinimumNArgs(0),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		opts.Heading = ""
 		opts.NoTimestamp = true
-		handleInput("", args)
+		return handleInput("", args)
 	},
 }
