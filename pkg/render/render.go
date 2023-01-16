@@ -12,7 +12,11 @@ import (
 	"github.com/jwalton/gchalk"
 )
 
-//Options holds print modifiers
+type Middleware interface {
+	Next(msg *logging.Message, opts *Options)
+}
+
+// Options holds print modifiers
 type Options struct {
 	Bold            bool
 	Level           string
@@ -28,27 +32,28 @@ type Options struct {
 	TimestampFormat string
 	MaxBufferSize   int
 	Writer          io.Writer
+	Filters         *[]string
 }
 
-//IndentationChar is the character used for indentation
+// IndentationChar is the character used for indentation
 var IndentationChar string = " └─"
 
-//TimestampFormat is the default timestamp format
+// TimestampFormat is the default timestamp format
 var TimestampFormat = "01-02-2006 15:04:05.000000"
 
-//WithIndent sets heading with indent option
+// WithIndent sets heading with indent option
 func (o *Options) WithIndent() *Options {
 	o.HeadingPrefix = IndentationChar
 	return o
 }
 
-//WithHeadingSuffix sets heading suffix
+// WithHeadingSuffix sets heading suffix
 func (o *Options) WithHeadingSuffix(s string) *Options {
 	o.HeadingSuffix = s
 	return o
 }
 
-//HasIndent returns true if heading has indent
+// HasIndent returns true if heading has indent
 func (o *Options) HasIndent() bool {
 	return o.HeadingPrefix == IndentationChar
 }
@@ -85,7 +90,7 @@ func styleHeading(heading string, opts *Options) string {
 
 const clear = "\x1b[0m"
 
-//Stylize will add stile to your body
+// Stylize will add stile to your body
 func Stylize(msg *logging.Message, opts *Options) (string, string) {
 
 	if msg.HasFields() {
@@ -99,9 +104,9 @@ func Stylize(msg *logging.Message, opts *Options) (string, string) {
 	heading := getHeading(opts)
 	heading = styleHeading(heading, opts)
 
-	// if msg.Caller != "" {
-	// 	heading = heading + "(" + msg.Caller + ")"
-	// }
+	if msg.Caller != "" {
+		heading = heading + "<" + msg.Caller + "> "
+	}
 
 	now := msg.GetTimestampOrNow()
 	ts := now.Format(opts.TimestampFormat)
@@ -151,7 +156,7 @@ func Stylize(msg *logging.Message, opts *Options) (string, string) {
 	return heading, content
 }
 
-//Print will render content to stdout
+// Print will render content to stdout
 func Print(msg *logging.Message, opts *Options) {
 	heading, content := Stylize(msg, opts)
 	fmt.Fprintf(opts.Writer, "%s%s", heading, content)
