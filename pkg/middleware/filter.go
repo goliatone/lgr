@@ -10,11 +10,16 @@ import (
 	"github.com/goliatone/lgr/pkg/render"
 )
 
-type Filter struct {
-	Script string
+// Middleware is the function used to run a line handler
+type Middleware interface {
+	Next(msg *logging.Message, opts *render.Options)
 }
 
-func (f *Filter) Next(msg *logging.Message, _ *render.Options) bool {
+type filter struct {
+	script string
+}
+
+func (f *filter) Next(msg *logging.Message, _ *render.Options) bool {
 	vm := goja.New()
 	vm.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
 
@@ -30,7 +35,7 @@ func (f *Filter) Next(msg *logging.Message, _ *render.Options) bool {
 		return true
 	})
 
-	val, err := vm.RunString(f.Script)
+	val, err := vm.RunString(f.script)
 	if err != nil {
 		return true
 	}
@@ -43,7 +48,7 @@ func (f *Filter) Next(msg *logging.Message, _ *render.Options) bool {
 }
 
 type FilterSet struct {
-	filters []Filter
+	filters []filter
 }
 
 func (f *FilterSet) Next(msg *logging.Message, opts *render.Options) bool {
@@ -56,17 +61,17 @@ func (f *FilterSet) Next(msg *logging.Message, opts *render.Options) bool {
 }
 
 func NewFilterSet(filters []string) (FilterSet, error) {
-	o := []Filter{}
-	for _, filter := range filters {
-		if strings.HasPrefix(filter, "@") {
-			file, err := ioutil.ReadFile(trimFirstRune(filter))
+	o := []filter{}
+	for _, f := range filters {
+		if strings.HasPrefix(f, "@") {
+			file, err := ioutil.ReadFile(trimFirstRune(f))
 			if err != nil {
 				return FilterSet{}, err
 			}
-			filter = string(file)
+			f = string(file)
 		}
 
-		o = append(o, Filter{Script: filter})
+		o = append(o, filter{script: f})
 	}
 
 	return FilterSet{

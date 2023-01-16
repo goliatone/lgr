@@ -12,10 +12,6 @@ import (
 	"github.com/jwalton/gchalk"
 )
 
-type Middleware interface {
-	Next(msg *logging.Message, opts *Options)
-}
-
 // Options holds print modifiers
 type Options struct {
 	Bold            bool
