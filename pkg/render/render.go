@@ -83,11 +83,14 @@ func styleHeading(heading string, opts *Options) string {
 	return heading
 }
 
+const clear = "\x1b[0m"
+
 //Stylize will add stile to your body
 func Stylize(msg *logging.Message, opts *Options) (string, string) {
 
 	if msg.HasFields() {
-		msg.Message = fmt.Sprintf("%s   %s", msg.Message, msg.Fields)
+		msg.WithFieldTemplate("\x1b[38;5;244m%s\x1b[0m=%s")
+		msg.Message = fmt.Sprintf("%s%s%s%s", msg.Message, clear, "\t", msg.Fields)
 	}
 
 	body := msg.Message
@@ -95,6 +98,10 @@ func Stylize(msg *logging.Message, opts *Options) (string, string) {
 	//Add heading
 	heading := getHeading(opts)
 	heading = styleHeading(heading, opts)
+
+	// if msg.Caller != "" {
+	// 	heading = heading + "(" + msg.Caller + ")"
+	// }
 
 	now := msg.GetTimestampOrNow()
 	ts := now.Format(opts.TimestampFormat)

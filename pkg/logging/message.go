@@ -21,6 +21,8 @@ var numericLevelMap = map[int]string{
 	60: "fatal",
 }
 
+type FieldFormatter = func(format string, a ...any) string
+
 //MessageData encodes the log payload
 type MessageData = map[string]interface{}
 
@@ -28,13 +30,18 @@ type MessageData = map[string]interface{}
 type MessageField struct {
 	Key   string
 	Value string
+	tpl   string
+}
+
+func (m *MessageField) WithTemplate(s string) {
+	m.tpl = s
 }
 
 func (m MessageField) String() string {
-	return fmt.Sprintf("%s=%s", m.Key, m.Value)
+	return fmt.Sprintf(m.tpl, m.Key, m.Value)
 }
 
-type sortableFields []MessageField
+type sortableFields []*MessageField
 
 func (s sortableFields) Len() int           { return len(s) }
 func (s sortableFields) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
@@ -45,8 +52,15 @@ type Message struct {
 	Timestamp *time.Time
 	Level     string
 	Message   string
-	Fields    []MessageField
+	Caller    string
+	Fields    []*MessageField
 	Line      int
+}
+
+func (m Message) WithFieldTemplate(t string) {
+	for _, field := range m.Fields {
+		field.WithTemplate(t)
+	}
 }
 
 //HasFields return true if there are extra fields
@@ -73,6 +87,7 @@ type LineParser interface {
 var timestampKeys = []string{"ts", "time", "timestamp", "date", "@timestamp"}
 var messageKeys = []string{"message", "msg"}
 var levelKeys = []string{"level", "log.level", "severity"}
+var callerKeys = []string{"caller", "logger"}
 
 //JSONLineParser implements LineParser
 type JSONLineParser struct {
@@ -122,13 +137,25 @@ func (p JSONLineParser) Parse(line []byte) (*Message, error) {
 		}
 	}
 
+	// for _, key := range callerKeys {
+	// 	if parseCaller(m, data, key) {
+	// 		break
+	// 	}
+	// }
+
 	if len(data) > 0 {
 		for key, val := range data {
 			value, err := json.Marshal(val)
 			if err != nil {
-				m.Fields = append(m.Fields, MessageField{Key: key, Value: fmt.Sprintf("%+v", val)})
+				m.Fields = append(m.Fields, &MessageField{
+					Key:   key,
+					Value: fmt.Sprintf("%+v", val),
+				})
 			} else {
-				m.Fields = append(m.Fields, MessageField{Key: key, Value: string(value)})
+				m.Fields = append(m.Fields, &MessageField{
+					Key:   key,
+					Value: string(value),
+				})
 			}
 		}
 		sort.Sort(sortableFields(m.Fields))
@@ -142,6 +169,15 @@ func parseMessage(m *Message, data MessageData, key string) bool {
 	if ok {
 		delete(data, key)
 		m.Message = message
+	}
+	return ok
+}
+
+func parseCaller(m *Message, data MessageData, key string) bool {
+	caller, ok := data[key].(string)
+	if ok {
+		delete(data, key)
+		m.Caller = caller
 	}
 	return ok
 }
