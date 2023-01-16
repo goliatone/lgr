@@ -40,8 +40,8 @@ var debugCmd = &cobra.Command{
   curl -v example.com | lgr debug
 	`,
 	Args: cobra.MinimumNArgs(0),
-	Run: func(cmd *cobra.Command, args []string) {
-		handleInput("debug", args)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return handleInput("debug", args)
 	},
 }
 
@@ -55,8 +55,8 @@ var infoCmd = &cobra.Command{
 	lgr I 'This is a debug message'
 	`,
 	Args: cobra.MinimumNArgs(0),
-	Run: func(cmd *cobra.Command, args []string) {
-		handleInput("info", args)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return handleInput("info", args)
 	},
 }
 
@@ -70,8 +70,8 @@ var warnCmd = &cobra.Command{
 	lgr W 'This is a debug message'
 	`,
 	Args: cobra.MinimumNArgs(0),
-	Run: func(cmd *cobra.Command, args []string) {
-		handleInput("warn", args)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return handleInput("warn", args)
 	},
 }
 
@@ -85,8 +85,8 @@ var errorCmd = &cobra.Command{
 	lgr E 'This is a debug message'
 	`,
 	Args: cobra.MinimumNArgs(0),
-	Run: func(cmd *cobra.Command, args []string) {
-		handleInput("error", args)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return handleInput("error", args)
 	},
 }
 
@@ -100,8 +100,8 @@ var fatalCmd = &cobra.Command{
 	lgr F 'This is a debug message'
 	`,
 	Args: cobra.MinimumNArgs(0),
-	Run: func(cmd *cobra.Command, args []string) {
-		handleInput("fatal", args)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return handleInput("fatal", args)
 	},
 }
 
