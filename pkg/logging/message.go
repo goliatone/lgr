@@ -91,6 +91,35 @@ func (m Message) GetTimestampOrNow() *time.Time {
 	return m.Timestamp
 }
 
+func (m *Message) AddField(key string, val interface{}) {
+	value, err := json.Marshal(val)
+	if err != nil {
+		m.Fields = append(m.Fields, &MessageField{
+			Key:   key,
+			Value: fmt.Sprintf("%+v", val),
+		})
+	} else {
+		m.Fields = append(m.Fields, &MessageField{
+			Key:   key,
+			Value: string(value),
+		})
+	}
+}
+
+func (m *Message) DeleteFields(keys ...string) {
+	for _, key := range keys {
+		for index, field := range m.Fields {
+			if field.Key == key {
+				m.Fields = append(m.Fields[0:index], m.Fields[index+1:]...)
+			}
+		}
+	}
+}
+
+func (m Message) SortFields() {
+	sort.Sort(sortableFields(m.Fields))
+}
+
 // LineParser exposes a Parse method to
 // handle log entries
 type LineParser interface {
@@ -162,20 +191,9 @@ func (p JSONLineParser) Parse(line []byte) (*Message, error) {
 
 	if len(data) > 0 {
 		for key, val := range data {
-			value, err := json.Marshal(val)
-			if err != nil {
-				m.Fields = append(m.Fields, &MessageField{
-					Key:   key,
-					Value: fmt.Sprintf("%+v", val),
-				})
-			} else {
-				m.Fields = append(m.Fields, &MessageField{
-					Key:   key,
-					Value: string(value),
-				})
-			}
+			m.AddField(key, val)
 		}
-		sort.Sort(sortableFields(m.Fields))
+		m.SortFields()
 	}
 
 	return m, nil
