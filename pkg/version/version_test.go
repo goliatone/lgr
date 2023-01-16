@@ -37,9 +37,9 @@ func Test_Print(t *testing.T) {
 	stdout := new(bytes.Buffer)
 
 	Tag = "0.0.17"
-	Time = "2023-01-15T00:10:48Z"
+	Time = "2023-01-15T19:47:35Z"
 	User = "goliatone"
-	Commit = "61bcee6416c00663781f36fefda77c4683809453"
+	Commit = "fb73348810ef878af1ba8fe58fdef761b3f20974"
 
 	actual := stdout.Bytes()
 	expected := LoadFixture(t, "version.txt", actual)
@@ -49,7 +49,7 @@ func Test_Print(t *testing.T) {
 	}
 
 	if res := string(expected) == string(stdout.String()); !res {
-		d := diff.LineDiff(string(expected), string(actual))
+		d := diff.LineDiff(string(expected), string(stdout.String()))
 		t.Errorf("output not as expected:\n%v", d)
 	}
 }
