@@ -20,11 +20,13 @@ func (f *Filter) Next(msg *logging.Message, _ *render.Options) bool {
 
 	vm.Set("line", msg)
 
-	vm.Set("addField", func(key string, value string) bool {
-		msg.Fields = append(msg.Fields, &logging.MessageField{
-			Key:   key,
-			Value: value,
-		})
+	vm.Set("addField", func(key string, value interface{}) bool {
+		msg.AddField(key, value)
+		return true
+	})
+
+	vm.Set("deleteFields", func(keys ...string) bool {
+		msg.DeleteFields(keys...)
 		return true
 	})
 

@@ -91,6 +91,7 @@ func styleHeading(heading string, opts *Options) string {
 const clear = "\x1b[0m"
 
 // Stylize will add stile to your body
+// TODO: use Message interface instead of struct to prevent cyclic deps
 func Stylize(msg *logging.Message, opts *Options) (string, string) {
 
 	if msg.HasFields() {
