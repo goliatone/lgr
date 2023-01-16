@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/goliatone/lgr/pkg/logging"
+	"github.com/goliatone/lgr/pkg/middleware"
 	"github.com/goliatone/lgr/pkg/render"
 	"github.com/spf13/cobra"
 )
@@ -71,8 +72,7 @@ Environment variable options:
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 0 && args[0] != "" {
-			handleInput(opts.Level, args)
-			return nil
+			return handleInput(opts.Level, args)
 		}
 		return handleLogStream(args)
 	},
@@ -172,14 +172,21 @@ func init() {
 		[]string{},
 		"list of style modifiers",
 	)
+
+	opts.Filters = pf.StringSliceP(
+		"filter",
+		"f",
+		[]string{},
+		"list of log line filters",
+	)
 }
 
-//GetRoot returns the root command
+// GetRoot returns the root command
 func GetRoot() *cobra.Command {
 	return rootCmd
 }
 
-//Execute exposes the root command execute method
+// Execute exposes the root command execute method
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -192,10 +199,15 @@ func handleLogStream(args []string) error {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Buffer([]byte{}, opts.MaxBufferSize*1024*1024)
 
-	i := 0
+	mid, err := middleware.NewFilterSet(*opts.Filters)
+	if err != nil {
+		return err
+	}
+
+	i, s := 0, 0
 	for scanner.Scan() {
 		b := scanner.Bytes()
-		line, err := parser.Parse(b)
+		m, err := parser.Parse(b)
 		if err != nil {
 			fmt.Println(string(b))
 			continue
@@ -203,11 +215,20 @@ func handleLogStream(args []string) error {
 
 		i++
 
-		line.Line = i
-		opts.Level = line.Level
+		m.Line = i
+		opts.Level = m.Level
 
-		render.Print(line, opts)
+		if !mid.Next(m, opts) {
+			s++
+			continue
+		}
+
+		render.Print(m, opts)
 	}
+
+	//TODO: how can we detect piped exit
+	footer := fmt.Sprintf("total: %d skipped: %d\n", i, s)
+	opts.Writer.Write([]byte(footer))
 
 	if err := scanner.Err(); err != nil {
 		return err
@@ -216,21 +237,23 @@ func handleLogStream(args []string) error {
 	return nil
 }
 
-func handleInput(level string, args []string) {
-	opts.Level = level
-
+func handleInput(level string, args []string) error {
 	var scanner *bufio.Scanner
-
 	stat, _ := os.Stdin.Stat()
 	if (stat.Mode() & os.ModeCharDevice) == 0 {
 		scanner = bufio.NewScanner(os.Stdin)
 	} else {
 		scanner = bufio.NewScanner(strings.NewReader(getBody(args)))
 	}
-
 	scanner.Buffer([]byte{}, opts.MaxBufferSize*1024*1024)
 
-	i := 0
+	opts.Level = level
+	mid, err := middleware.NewFilterSet(*opts.Filters)
+	if err != nil {
+		return err
+	}
+
+	i, s := 0, 0
 	for scanner.Scan() {
 		body := scanner.Text()
 		i++
@@ -241,12 +264,23 @@ func handleInput(level string, args []string) {
 			Message: body,
 		}
 
+		if !mid.Next(m, opts) {
+			s++
+			continue
+		}
+
 		render.Print(m, opts)
 	}
+
+	//TODO: how can we detect piped exit
+	footer := fmt.Sprintf("total: %d skipped: %d\n", i, s)
+	opts.Writer.Write([]byte(footer))
 
 	if opts.Level == "fatal" {
 		os.Exit(errorExitCode)
 	}
+
+	return nil
 }
 
 func getBody(args []string) string {
