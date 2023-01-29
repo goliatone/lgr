@@ -22,6 +22,8 @@ var numericLevelMap = map[int]string{
 	70: "panic",
 }
 
+// - zap: https://pkg.go.dev/go.uber.org/zap/#AtomicLevel.MarshalText
+// - bunyan: https://github.com/trentm/node-bunyan/tree/master/#levels
 var levelNumberMap = map[string]int{
 	"trace":   10,
 	"debug":   20,
@@ -34,8 +36,6 @@ var levelNumberMap = map[string]int{
 	"panic":   70,
 }
 
-type FieldFormatter = func(format string, a ...any) string
-
 // MessageData encodes the log payload
 type MessageData = map[string]interface{}
 
@@ -46,6 +46,7 @@ type MessageField struct {
 	tpl   string
 }
 
+// WithTemplate updates a fields print template
 func (m *MessageField) WithTemplate(s string) {
 	m.tpl = s
 }
@@ -62,13 +63,14 @@ func (s sortableFields) Less(i, j int) bool { return s[i].Key < s[j].Key }
 
 // Message holds fields from a log line
 type Message struct {
-	Timestamp *time.Time      `json:"timestamp"`
-	Level     string          `json:"label"`
-	Incidence int             `json:"level"`
-	Message   string          `json:"message"`
-	Caller    string          `json:"caller"`
-	Fields    []*MessageField `json:"fields"`
-	Line      int             `json:"line"`
+	Timestamp  *time.Time      `json:"timestamp"`
+	Level      string          `json:"label"`
+	Incidence  int             `json:"level"`
+	Message    string          `json:"message"`
+	Caller     string          `json:"caller"`
+	Fields     []*MessageField `json:"fields"`
+	Line       int             `json:"line"`
+	Stacktrace string
 }
 
 // WithFieldTemplate updates the template used to determine
@@ -136,6 +138,7 @@ var timestampKeys = []string{"ts", "time", "timestamp", "date", "@timestamp"}
 var messageKeys = []string{"message", "msg"}
 var levelKeys = []string{"level", "log.level", "severity"}
 var callerKeys = []string{"caller", "logger"}
+var stackKeys = []string{"stacktrace", "stack"}
 
 // JSONLineParser implements LineParser
 type JSONLineParser struct {
@@ -194,6 +197,12 @@ func (p JSONLineParser) Parse(line []byte) (*Message, error) {
 		}
 	}
 
+	for _, key := range stackKeys {
+		if parsestacktrace(m, data, key) {
+			break
+		}
+	}
+
 	if len(data) > 0 {
 		for key, val := range data {
 			m.AddField(key, val)
@@ -209,6 +218,15 @@ func parseMessage(m *Message, data MessageData, key string) bool {
 	if ok {
 		delete(data, key)
 		m.Message = message
+	}
+	return ok
+}
+
+func parsestacktrace(m *Message, data MessageData, key string) bool {
+	stacktrace, ok := data[key].(string)
+	if ok {
+		delete(data, key)
+		m.Stacktrace = stacktrace
 	}
 	return ok
 }
