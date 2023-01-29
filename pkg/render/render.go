@@ -146,6 +146,10 @@ func Stylize(msg *logging.Message, opts *Options) (string, string) {
 
 	content = style.Paint(content)
 
+	if msg.Stacktrace != "" {
+		content += "\n\t" + strings.ReplaceAll(msg.Stacktrace, "\n", "\n\t")
+	}
+
 	if !opts.NoNewline {
 		content = content + "\n"
 	}
