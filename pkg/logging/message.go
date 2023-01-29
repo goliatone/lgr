@@ -70,7 +70,7 @@ type Message struct {
 	Caller     string          `json:"caller"`
 	Fields     []*MessageField `json:"fields"`
 	Line       int             `json:"line"`
-	Stacktrace string
+	Stacktrace string          `json:"stack"`
 }
 
 // WithFieldTemplate updates the template used to determine
