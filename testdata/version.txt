@@ -1,0 +1,8 @@
+
+              lgr:  Style console and log output
+          Version:  0.0.17
+Build Commit Hash:  fb73348810ef878af1ba8fe58fdef761b3f20974
+       Build Time:  2023-01-15T19:47:35Z
+       Build User:  goliatone
+             Info:  https://github.com/goliatone/lgr
+

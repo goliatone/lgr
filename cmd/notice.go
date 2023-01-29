@@ -20,8 +20,8 @@ var successCmd = &cobra.Command{
   curl -v example.com | lgr ok
 	`,
 	Args: cobra.MinimumNArgs(0),
-	Run: func(cmd *cobra.Command, args []string) {
-		handleInput("success", args)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return handleInput("success", args)
 	},
 }
 
@@ -36,7 +36,7 @@ var failureCmd = &cobra.Command{
   curl -v example.com || lgr ko
 	`,
 	Args: cobra.MinimumNArgs(0),
-	Run: func(cmd *cobra.Command, args []string) {
-		handleInput("failure", args)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return handleInput("failure", args)
 	},
 }

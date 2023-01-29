@@ -19,42 +19,74 @@ var numericLevelMap = map[int]string{
 	40: "warn",
 	50: "error",
 	60: "fatal",
+	70: "panic",
 }
 
-//MessageData encodes the log payload
+// - zap: https://pkg.go.dev/go.uber.org/zap/#AtomicLevel.MarshalText
+// - bunyan: https://github.com/trentm/node-bunyan/tree/master/#levels
+var levelNumberMap = map[string]int{
+	"trace":   10,
+	"debug":   20,
+	"info":    30,
+	"warn":    40,
+	"warning": 40,
+	"error":   50,
+	"err":     50,
+	"fatal":   60,
+	"panic":   70,
+}
+
+// MessageData encodes the log payload
 type MessageData = map[string]interface{}
 
-//MessageField hols key value fields
+// MessageField hols key value fields
 type MessageField struct {
-	Key   string
-	Value string
+	Key   string `json:"key"`
+	Value string `json:"value"`
+	tpl   string
+}
+
+// WithTemplate updates a fields print template
+func (m *MessageField) WithTemplate(s string) {
+	m.tpl = s
 }
 
 func (m MessageField) String() string {
-	return fmt.Sprintf("%s=%s", m.Key, m.Value)
+	return fmt.Sprintf(m.tpl, m.Key, m.Value)
 }
 
-type sortableFields []MessageField
+type sortableFields []*MessageField
 
 func (s sortableFields) Len() int           { return len(s) }
 func (s sortableFields) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s sortableFields) Less(i, j int) bool { return s[i].Key < s[j].Key }
 
-//Message holds fields from a log line
+// Message holds fields from a log line
 type Message struct {
-	Timestamp *time.Time
-	Level     string
-	Message   string
-	Fields    []MessageField
-	Line      int
+	Timestamp  *time.Time      `json:"timestamp"`
+	Level      string          `json:"label"`
+	Incidence  int             `json:"level"`
+	Message    string          `json:"message"`
+	Caller     string          `json:"caller"`
+	Fields     []*MessageField `json:"fields"`
+	Line       int             `json:"line"`
+	Stacktrace string          `json:"stack"`
 }
 
-//HasFields return true if there are extra fields
+// WithFieldTemplate updates the template used to determine
+// how we render fields
+func (m Message) WithFieldTemplate(t string) {
+	for _, field := range m.Fields {
+		field.WithTemplate(t)
+	}
+}
+
+// HasFields return true if there are extra fields
 func (m Message) HasFields() bool {
 	return len(m.Fields) > 0
 }
 
-//GetTimestampOrNow return given timestamp or now
+// GetTimestampOrNow return given timestamp or now
 func (m Message) GetTimestampOrNow() *time.Time {
 	if m.Timestamp == nil {
 		t := time.Now()
@@ -63,18 +95,52 @@ func (m Message) GetTimestampOrNow() *time.Time {
 	return m.Timestamp
 }
 
-//LineParser exposes a Parse method to
-//handle log entries
+// AddField will add a field to the message
+func (m *Message) AddField(key string, val interface{}) {
+	value, err := json.Marshal(val)
+	if err != nil {
+		m.Fields = append(m.Fields, &MessageField{
+			Key:   key,
+			Value: fmt.Sprintf("%+v", val),
+		})
+	} else {
+		m.Fields = append(m.Fields, &MessageField{
+			Key:   key,
+			Value: string(value),
+		})
+	}
+}
+
+// DeleteFields will remove fields from the message
+func (m *Message) DeleteFields(keys ...string) {
+	for _, key := range keys {
+		for index, field := range m.Fields {
+			if field.Key == key {
+				m.Fields = append(m.Fields[0:index], m.Fields[index+1:]...)
+			}
+		}
+	}
+}
+
+// SortFields to ensure we have a consistent view of the meta
+func (m Message) SortFields() {
+	sort.Sort(sortableFields(m.Fields))
+}
+
+// LineParser exposes a Parse method to
+// handle log entries
 type LineParser interface {
 	Parse(line []byte) (*Message, error)
 }
 
-//TODO: Make configurable
+// TODO: Make configurable
 var timestampKeys = []string{"ts", "time", "timestamp", "date", "@timestamp"}
 var messageKeys = []string{"message", "msg"}
-var levelKeys = []string{"level", "log.level"}
+var levelKeys = []string{"level", "log.level", "severity"}
+var callerKeys = []string{"caller", "logger"}
+var stackKeys = []string{"stacktrace", "stack"}
 
-//JSONLineParser implements LineParser
+// JSONLineParser implements LineParser
 type JSONLineParser struct {
 }
 
@@ -86,7 +152,7 @@ func dropNonJSON(b []byte) []byte {
 	return b[s:]
 }
 
-//Parse will parse a JSON formatted log line
+// Parse will parse a JSON formatted log line
 func (p JSONLineParser) Parse(line []byte) (*Message, error) {
 
 	line = dropNonJSON(line)
@@ -114,6 +180,9 @@ func (p JSONLineParser) Parse(line []byte) (*Message, error) {
 		if !parseLevelString(m, data, key) {
 			parseLevelInt(m, data, key)
 		}
+		if i, ok := levelNumberMap[m.Level]; ok {
+			m.Incidence = i
+		}
 	}
 
 	for _, key := range messageKeys {
@@ -122,16 +191,23 @@ func (p JSONLineParser) Parse(line []byte) (*Message, error) {
 		}
 	}
 
+	for _, key := range callerKeys {
+		if parseCaller(m, data, key) {
+			break
+		}
+	}
+
+	for _, key := range stackKeys {
+		if parsestacktrace(m, data, key) {
+			break
+		}
+	}
+
 	if len(data) > 0 {
 		for key, val := range data {
-			value, err := json.Marshal(val)
-			if err != nil {
-				m.Fields = append(m.Fields, MessageField{Key: key, Value: fmt.Sprintf("%+v", val)})
-			} else {
-				m.Fields = append(m.Fields, MessageField{Key: key, Value: string(value)})
-			}
+			m.AddField(key, val)
 		}
-		sort.Sort(sortableFields(m.Fields))
+		m.SortFields()
 	}
 
 	return m, nil
@@ -142,6 +218,24 @@ func parseMessage(m *Message, data MessageData, key string) bool {
 	if ok {
 		delete(data, key)
 		m.Message = message
+	}
+	return ok
+}
+
+func parsestacktrace(m *Message, data MessageData, key string) bool {
+	stacktrace, ok := data[key].(string)
+	if ok {
+		delete(data, key)
+		m.Stacktrace = stacktrace
+	}
+	return ok
+}
+
+func parseCaller(m *Message, data MessageData, key string) bool {
+	caller, ok := data[key].(string)
+	if ok {
+		delete(data, key)
+		m.Caller = caller
 	}
 	return ok
 }

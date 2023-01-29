@@ -12,7 +12,7 @@ import (
 	"github.com/jwalton/gchalk"
 )
 
-//Options holds print modifiers
+// Options holds print modifiers
 type Options struct {
 	Bold            bool
 	Level           string
@@ -27,27 +27,29 @@ type Options struct {
 	Modifiers       *[]string
 	TimestampFormat string
 	MaxBufferSize   int
+	Writer          io.Writer
+	Filters         *[]string
 }
 
-//IndentationChar is the character used for indentation
+// IndentationChar is the character used for indentation
 var IndentationChar string = " └─"
 
-//TimestampFormat is the default timestamp format
+// TimestampFormat is the default timestamp format
 var TimestampFormat = "01-02-2006 15:04:05.000000"
 
-//WithIndent sets heading with indent option
+// WithIndent sets heading with indent option
 func (o *Options) WithIndent() *Options {
 	o.HeadingPrefix = IndentationChar
 	return o
 }
 
-//WithHeadingSuffix sets heading suffix
+// WithHeadingSuffix sets heading suffix
 func (o *Options) WithHeadingSuffix(s string) *Options {
 	o.HeadingSuffix = s
 	return o
 }
 
-//HasIndent returns true if heading has indent
+// HasIndent returns true if heading has indent
 func (o *Options) HasIndent() bool {
 	return o.HeadingPrefix == IndentationChar
 }
@@ -82,11 +84,15 @@ func styleHeading(heading string, opts *Options) string {
 	return heading
 }
 
-//Stylize will add stile to your body
+const clear = "\x1b[0m"
+
+// Stylize will add stile to your body
+// TODO: use Message interface instead of struct to prevent cyclic deps
 func Stylize(msg *logging.Message, opts *Options) (string, string) {
 
 	if msg.HasFields() {
-		msg.Message = fmt.Sprintf("%s   %s", msg.Message, msg.Fields)
+		msg.WithFieldTemplate("\x1b[38;5;244m%s\x1b[0m=%s")
+		msg.Message = fmt.Sprintf("%s%s%s%s", msg.Message, clear, "\t", msg.Fields)
 	}
 
 	body := msg.Message
@@ -94,6 +100,10 @@ func Stylize(msg *logging.Message, opts *Options) (string, string) {
 	//Add heading
 	heading := getHeading(opts)
 	heading = styleHeading(heading, opts)
+
+	if msg.Caller != "" {
+		heading = heading + "<" + msg.Caller + "> "
+	}
 
 	now := msg.GetTimestampOrNow()
 	ts := now.Format(opts.TimestampFormat)
@@ -136,6 +146,10 @@ func Stylize(msg *logging.Message, opts *Options) (string, string) {
 
 	content = style.Paint(content)
 
+	if msg.Stacktrace != "" {
+		content += "\n\t" + strings.ReplaceAll(msg.Stacktrace, "\n", "\n\t")
+	}
+
 	if !opts.NoNewline {
 		content = content + "\n"
 	}
@@ -143,13 +157,10 @@ func Stylize(msg *logging.Message, opts *Options) (string, string) {
 	return heading, content
 }
 
-//Print will render content to stdout
+// Print will render content to stdout
 func Print(msg *logging.Message, opts *Options) {
 	heading, content := Stylize(msg, opts)
-	//TODO: use writer
-	// fmt.Fprint(w io.Writer, a ...interface{})
-
-	fmt.Printf("%s%s", heading, content)
+	fmt.Fprintf(opts.Writer, "%s%s", heading, content)
 }
 
 func checkInput(f *os.File) (bool, error) {
