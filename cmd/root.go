@@ -273,8 +273,8 @@ func handleInput(level string, args []string) error {
 	}
 
 	//TODO: how can we detect piped exit
-	footer := fmt.Sprintf("total: %d skipped: %d\n", i, s)
-	opts.Writer.Write([]byte(footer))
+	// footer := fmt.Sprintf("total: %d skipped: %d\n", i, s)
+	// opts.Writer.Write([]byte(footer))
 
 	if opts.Level == "fatal" {
 		os.Exit(errorExitCode)
