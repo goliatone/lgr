@@ -126,9 +126,10 @@ func init() {
 	pf.BoolVar(
 		&opts.NoColor,
 		"no-color",
-		getEnvBool("LGR_NO_COLOR", false),
+		getEnvBool("LGR_NO_COLOR", false) || getEnvBool("NO_COLOR", false),
 		"disable color output",
 	)
+
 	pf.BoolVarP(
 		&opts.NoNewline,
 		"no-newline",
