@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    tags:
+      - 'v*.*.*'
   pull_request:
 
 jobs:
@@ -13,7 +15,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go: ["1.19"]
+        go: ["1.21"]
     env:
       VERBOSE: 1
       GOFLAGS: -mod=readonly
@@ -21,12 +23,14 @@ jobs:
 
     steps:
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go }}
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Run build
         run: ./taskfile ci:build
@@ -37,8 +41,20 @@ jobs:
       - name: Run clean
         run: ./taskfile ci:clean
 
-      - name: Run release
-        uses: goreleaser/goreleaser-action@v2
+      # snapshot release for non tag pushes (no artifacts published)
+      - name: Run snapshot release
+        if: github.ref_type != 'tag'
+        uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
           args: release --snapshot --skip=publish --clean
+
+      # full release for tags with all artifacts published to GitHub releases
+      - name: Run full release
+        if: github.ref_type == 'tag'
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
