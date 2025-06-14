@@ -31,6 +31,8 @@ type Options struct {
 	Filters         *[]string
 }
 
+const clear = "\x1b[0m"
+
 // IndentationChar is the character used for indentation
 var IndentationChar string = " └─"
 
@@ -54,45 +56,15 @@ func (o *Options) HasIndent() bool {
 	return o.HeadingPrefix == IndentationChar
 }
 
-func getHeading(opts *Options) string {
-	if opts.Heading != "" {
-		return opts.Heading
-	}
-	heading := headings[opts.Level]
-
-	if opts.ShortHeading {
-		heading = headingShort[opts.Level]
-	}
-	return heading
-}
-
-func styleHeading(heading string, opts *Options) string {
-	if heading == "" {
-		return heading
-	}
-
-	if style, ok := headingStyle[opts.Level]; ok {
-		heading = style.Paint(heading)
-	}
-
-	heading += opts.HeadingSuffix
-
-	if opts.HasIndent() {
-		heading = opts.HeadingPrefix + heading
-	}
-
-	return heading
-}
-
-const clear = "\x1b[0m"
-
 // Stylize will add stile to your body
 // TODO: use Message interface instead of struct to prevent cyclic deps
 func Stylize(msg *logging.Message, opts *Options) (string, string) {
 
 	if msg.HasFields() {
-		msg.WithFieldTemplate("\x1b[38;5;244m%s\x1b[0m=%s")
-		msg.Message = fmt.Sprintf("%s%s%s%s", msg.Message, clear, "\t", msg.Fields)
+		fieldTemplate := getFieldTemplate(opts)
+		msg.WithFieldTemplate(fieldTemplate)
+		clearSeq := getClearSequence(opts)
+		msg.Message = fmt.Sprintf("%s%s%s%s", msg.Message, clearSeq, "\t", msg.Fields)
 	}
 
 	body := msg.Message
@@ -107,9 +79,7 @@ func Stylize(msg *logging.Message, opts *Options) (string, string) {
 
 	now := msg.GetTimestampOrNow()
 	ts := now.Format(opts.TimestampFormat)
-	if style, ok := elementStyle["timestamp"]; ok {
-		ts = style.Paint(ts)
-	}
+	ts = applyTimestampStyle(ts, opts)
 
 	if opts.NoTimestamp != true {
 		if opts.HasIndent() {
@@ -120,31 +90,35 @@ func Stylize(msg *logging.Message, opts *Options) (string, string) {
 
 	content := body
 
-	style, err := gchalk.WithStyle(opts.Color)
+	if !opts.NoColor {
+		style, err := gchalk.WithStyle(opts.Color)
 
-	if opts.Modifiers != nil && len(*opts.Modifiers) > 0 {
-		m := normalizeStyles(*opts.Modifiers...)
-		style, err = style.WithStyle(m...)
-	} else if mods, ok := modifiers[opts.Level]; ok {
-		m := normalizeStyles(mods...)
-		style, err = style.WithStyle(m...)
+		if opts.Modifiers != nil && len(*opts.Modifiers) > 0 {
+			m := normalizeStyles(*opts.Modifiers...)
+			style, err = style.WithStyle(m...)
+		} else if mods, ok := modifiers[opts.Level]; ok {
+			m := normalizeStyles(mods...)
+			style, err = style.WithStyle(m...)
+		}
+
+		if err != nil {
+			//TODO: check for tty theme
+			style = gchalk.WithBrightWhite()
+		}
+
+		if opts.Bold {
+			style = style.WithBold()
+		}
+
+		content = style.Paint(content)
+	} else {
+		// When colors are disabled, we might still want to handle bold differently
+		// For now, we'll just use the plain content
 	}
 
-	if err != nil {
-		//TODO: check for tty theme
-		style = gchalk.WithBrightWhite()
-	}
-
-	if opts.Bold {
-		style = style.WithBold()
-	}
-
-	//Check before we add asci chars and we cant check
 	if opts.NoNewline && !strings.HasSuffix(content, " ") {
 		content = content + " "
 	}
-
-	content = style.Paint(content)
 
 	if msg.Stacktrace != "" {
 		content += "\n\t" + strings.ReplaceAll(msg.Stacktrace, "\n", "\n\t")
@@ -189,4 +163,62 @@ func normalizeStyles(styles ...string) []string {
 		}
 	}
 	return o
+}
+
+func getFieldTemplate(opts *Options) string {
+	if opts.NoColor {
+		return "%s=%s"
+	}
+	return "\x1b[38;5;244m%s\x1b[0m=%s"
+}
+
+func getClearSequence(opts *Options) string {
+	if opts.NoColor {
+		return ""
+	}
+	return clear
+}
+
+func applyTimestampStyle(ts string, opts *Options) string {
+	if opts.NoColor {
+		return ts
+	}
+
+	if style, ok := elementStyle["timestamp"]; ok {
+		return style.Paint(ts)
+	}
+
+	return ts
+}
+
+func getHeading(opts *Options) string {
+	if opts.Heading != "" {
+		return opts.Heading
+	}
+	heading := headings[opts.Level]
+
+	if opts.ShortHeading {
+		heading = headingShort[opts.Level]
+	}
+	return heading
+}
+
+func styleHeading(heading string, opts *Options) string {
+	if heading == "" {
+		return heading
+	}
+
+	if !opts.NoColor {
+		if style, ok := headingStyle[opts.Level]; ok {
+			heading = style.Paint(heading)
+		}
+	}
+
+	heading += opts.HeadingSuffix
+
+	if opts.HasIndent() {
+		heading = opts.HeadingPrefix + heading
+	}
+
+	return heading
 }
