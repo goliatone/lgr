@@ -73,8 +73,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GO_RELEASER_HOMEBREW_TAP }}
 
       # create latest tag after goreleaser
-      - name: "Create latest tag"
+      - name: "Update latest release"
         if: startsWith(github.ref, 'refs/tags/') && !startsWith(github.ref, 'refs/tags/latest') && matrix.os == 'ubuntu-latest'
-        uses: EndBug/latest-tag@latest
+        uses: softprops/action-gh-release@v1
         with:
-          description: "lgr latest release"
+          tag_name: latest
+          name: "Latest Release"
+          body: "This is always the latest release"
+          draft: false
+          prerelease: false
