@@ -101,6 +101,10 @@ function example {
     $_lgr box "Hello Style\n\n${msg}" --style "double" -a "center"
 }
 
+function fatal:exec {
+    ./bin/darwin/lgr exec -- fail || ./bin/darwin/lgr fatal --exit-code $? "failed with exit code $?"
+}
+
 function fatal {
     (fail) || ./bin/darwin/lgr fatal --exit-code $? "failed with exit code $?"
 }

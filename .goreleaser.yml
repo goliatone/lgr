@@ -15,7 +15,7 @@ builds:
       - darwin
       # - windows
     goarch:
-      - 386
+      - "386"
       - amd64
       - arm
       - arm64
@@ -27,9 +27,13 @@ builds:
       - -X github.com/goliatone/lgr/pkg/version.Time={{.Date}}
       - -X github.com/goliatone/lgr/pkg/version.User=goliatone
 archives:
-  - replacements:
-      386: i386
-      amd64: x86_64
+  - name_template: >-
+      {{- .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end -}}
 checksum:
   name_template: "checksums.txt"
 snapshot:
@@ -44,7 +48,7 @@ changelog:
       - "merge fix"
 brews:
   - name: lgr
-    tap:
+    repository:
       owner: goliatone
       name: homebrew-tap
     description: pretty output for terminal scripts.
@@ -54,9 +58,13 @@ brews:
       system "#{bin}/lgr -V"
 nfpms:
   - id: lgr
-    replacements:
-      386: i386
-      amd64: x86_64
+    file_name_template: >-
+      {{- .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end -}}
     bindir: /usr/local/bin/
     maintainer: goliatone <lgr@goliat.one>
     description: pretty output for terminal scripts.

@@ -67,8 +67,9 @@ failure message.
 
 			if exitError, ok := err.(*exec.ExitError); ok {
 				os.Exit(exitError.ExitCode())
+			} else {
+				os.Exit(1)
 			}
-			return
 		}
 
 		widget.Stop()
