@@ -60,4 +60,11 @@ jobs:
           version: "~> v2"
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GO_RELEASER_HOMEBREW_TAP }}
+
+      # create latest tag
+      - name: "Create latest tag"
+        if: github.ref_type == 'tag' && matrix.os == 'ubuntu-latest'
+        uses: EndBug/latest-tag@latest
+        with:
+          description: "lgr latest release"
