@@ -49,7 +49,7 @@ jobs:
         if: github.ref_type != 'tag' && matrix.os == 'ubuntu-latest' # prevent releasing twice
         uses: goreleaser/goreleaser-action@v5
         with:
-          version: latest
+          version: "~> v2"
           args: release --snapshot --skip=publish --clean
 
       # full release for tags with all artifacts published to GitHub releases
@@ -57,7 +57,7 @@ jobs:
         if: github.ref_type == 'tag' && matrix.os == 'ubuntu-latest'
         uses: goreleaser/goreleaser-action@v5
         with:
-          version: latest
+          version: "~> v2"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
