@@ -13,6 +13,7 @@ require (
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/dop251/goja v0.0.0-20230114103038-6eb401d70090
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 )
 
