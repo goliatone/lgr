@@ -12,6 +12,9 @@ jobs:
   build:
     name: "Build - Test - Release"
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+      packages: write
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -41,9 +44,9 @@ jobs:
       - name: Run clean
         run: ./taskfile ci:clean
 
-      # snapshot release for non tag pushes (no artifacts published)
+      # snapshot release for non tag pushes, no artifacts published
       - name: Run snapshot release
-        if: github.ref_type != 'tag'
+        if: github.ref_type != 'tag' && matrix.os == 'ubuntu-latest' # prevent releasing twice
         uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
@@ -51,7 +54,7 @@ jobs:
 
       # full release for tags with all artifacts published to GitHub releases
       - name: Run full release
-        if: github.ref_type == 'tag'
+        if: github.ref_type == 'tag' && matrix.os == 'ubuntu-latest'
         uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
