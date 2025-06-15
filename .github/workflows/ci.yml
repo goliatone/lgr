@@ -59,12 +59,6 @@ jobs:
           echo "Current tag (if any):"
           git describe --tags --exact-match HEAD 2>/dev/null || echo "No tag on HEAD"
 
-      - name: Test token permissions
-        if: startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest'
-        run: |
-          curl -H "Authorization: token ${{ secrets.GO_RELEASER_HOMEBREW_TAP }}" \
-              https://api.github.com/repos/goliatone/homebrew-tap
-
       # snapshot release for non tag pushes, no artifacts published
       - name: Run snapshot release
         if: "!startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest'"
@@ -72,6 +66,19 @@ jobs:
         with:
           version: "~> v2"
           args: release --snapshot --skip=publish --clean
+
+      - name: Pre-release debug
+        if: startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest'
+        run: |
+          echo "=== PRE-RELEASE DEBUG ==="
+          echo "About to run GoReleaser!"
+          echo "Ref: ${{ github.ref }}"
+          echo "Matrix OS: ${{ matrix.os }}"
+          echo "Tag condition: ${{ startsWith(github.ref, 'refs/tags/') }}"
+          echo "OS condition: ${{ matrix.os == 'ubuntu-latest' }}"
+          echo "Combined condition should be: true"
+          echo "Token exists: ${{ secrets.GO_RELEASER_HOMEBREW_TAP != '' }}"
+          echo "============================"
 
       # full release for tags with all artifacts published to GitHub releases
       - name: Run full release
@@ -82,3 +89,10 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GO_RELEASER_HOMEBREW_TAP }}
+
+      - name: Post-release debug
+        if: startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest'
+        run: |
+          echo "=== POST-RELEASE DEBUG ==="
+          echo "GoReleaser step completed"
+          echo "=========================="
