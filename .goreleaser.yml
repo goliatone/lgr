@@ -55,6 +55,7 @@ brews:
     repository:
       owner: goliatone
       name: homebrew-tap
+      branch: master
     directory: Formula
     description: pretty output for terminal scripts.
     homepage: https://github.com/goliatone/lgr
