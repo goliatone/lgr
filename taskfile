@@ -228,9 +228,7 @@ function release {
     git tag -a "v${tag}" -m "${message}"
 
     # Push tags and trigger release 🚀 🥳
-    git push --tags
-
-    git push
+    git push origin master --tags
 }
 
 ##
