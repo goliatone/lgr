@@ -1,5 +1,3 @@
-# This is an example goreleaser.yaml file with some sane defaults.
-# Make sure to check the documentation at http://goreleaser.com
 version: 2
 project_name: lgr
 git:
@@ -90,11 +88,9 @@ brews:
       system "#{bin}/lgr -V"
     ids:
       - macos
-      - linux-windows
-
 nfpms:
   - id: lgr
-    builds:
+    ids:
       - linux-windows
     file_name_template: >-
       {{- .ProjectName }}_
