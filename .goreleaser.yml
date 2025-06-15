@@ -7,16 +7,14 @@ git:
     - latest
 before:
   hooks:
-    # You may remove this if you don't use go modules.
     - go mod download
-    # you may remove this if you don't need go generate
-    # - go generate ./...
+
 builds:
-  - env:
+  - id: linux-windows
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
-      - darwin
       # - windows
     goarch:
       - "386"
@@ -30,6 +28,29 @@ builds:
       - -X github.com/goliatone/lgr/pkg/version.Tag=v{{.Version}}
       - -X github.com/goliatone/lgr/pkg/version.Time={{.Date}}
       - -X github.com/goliatone/lgr/pkg/version.User=goliatone
+
+  - id: macos
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+    goarch:
+      - amd64  # intel macs
+      - arm64  # Apple silicon
+    main: "./main.go"
+    binary: "lgr"
+    ldflags:
+      - -s -w
+      - -X github.com/goliatone/lgr/pkg/version.Tag=v{{.Version}}
+      - -X github.com/goliatone/lgr/pkg/version.Time={{.Date}}
+      - -X github.com/goliatone/lgr/pkg/version.User=goliatone
+
+universal_binaries:
+  - id: lgr-universal
+    ids:
+      - macos
+    name_template: "lgr"
+
 archives:
   - name_template: >-
       {{- .ProjectName }}_
@@ -38,10 +59,13 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end -}}
+
 checksum:
   name_template: "checksums.txt"
+
 snapshot:
   version_template: "{{ .Tag }}-next"
+
 changelog:
   sort: asc
   filters:
@@ -50,20 +74,28 @@ changelog:
       - "^test:"
       - "^Update README"
       - "merge fix"
+
 brews:
   - name: lgr
     repository:
       owner: goliatone
       name: homebrew-tap
       branch: master
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     directory: Formula
     description: pretty output for terminal scripts.
     homepage: https://github.com/goliatone/lgr
     license: "MIT"
     test: |
       system "#{bin}/lgr -V"
+    ids:
+      - macos
+      - linux-windows
+
 nfpms:
   - id: lgr
+    builds:
+      - linux-windows
     file_name_template: >-
       {{- .ProjectName }}_
       {{- title .Os }}_
