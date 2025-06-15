@@ -53,7 +53,6 @@ jobs:
           echo "github.ref_name: ${{ github.ref_name }}"
           echo "github.ref_type: ${{ github.ref_type }}"
           echo "Is tag check: ${{ startsWith(github.ref, 'refs/tags/') }}"
-          echo "Is tag: ${{ startsWith(github.ref, 'refs/tags/') }}"
           echo "Available tags:"
           git tag -l
           echo "Current tag (if any):"
@@ -62,7 +61,7 @@ jobs:
       # snapshot release for non tag pushes, no artifacts published
       - name: Run snapshot release
         if: "!startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest'"
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
           args: release --snapshot --skip=publish --clean
@@ -77,7 +76,8 @@ jobs:
           echo "Tag condition: ${{ startsWith(github.ref, 'refs/tags/') }}"
           echo "OS condition: ${{ matrix.os == 'ubuntu-latest' }}"
           echo "Combined condition should be: true"
-          echo "Token exists: ${{ secrets.GO_RELEASER_HOMEBREW_TAP != '' }}"
+          echo "GitHub token available: ${{ secrets.GITHUB_TOKEN != '' }}"
+          echo "Homebrew token available: ${{ secrets.GO_RELEASER_HOMEBREW_TAP != '' }}"
           echo "============================"
 
       # full release for tags with all artifacts published to GitHub releases
@@ -86,13 +86,15 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
-          args: release --clean --verbose --debug
+          args: release --clean --verbose
         env:
-          GITHUB_TOKEN: ${{ secrets.GO_RELEASER_HOMEBREW_TAP }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.GO_RELEASER_HOMEBREW_TAP }}
 
       - name: Post-release debug
         if: startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest'
         run: |
           echo "=== POST-RELEASE DEBUG ==="
           echo "GoReleaser step completed"
+          echo "Check artifacts at: https://github.com/${{ github.repository }}/releases"
           echo "=========================="
