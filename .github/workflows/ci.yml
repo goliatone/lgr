@@ -83,9 +83,9 @@ jobs:
       # full release for tags with all artifacts published to GitHub releases
       - name: Run full release
         if: startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest'
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v6
         with:
-          version: latest
+          version: v2.10.2
           args: release --clean --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.GO_RELEASER_HOMEBREW_TAP }}
