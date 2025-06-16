@@ -59,30 +59,32 @@ changelog:
       - "^test:"
       - "^Update README"
       - "merge fix"
-brews:
-  - name: lgr
-    repository:
-      owner: goliatone
-      name: homebrew-tap
-      branch: master
-      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    directory: Formula
-    description: pretty output for terminal scripts.
-    homepage: https://github.com/goliatone/lgr
-    license: "MIT"
-    test: |
-      system "#{bin}/lgr -V"
-# homebrew_casks:
+# brews:
 #   - name: lgr
 #     repository:
 #       owner: goliatone
 #       name: homebrew-tap
 #       branch: master
 #       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-#     directory: Casks
+#     directory: Formula
 #     description: pretty output for terminal scripts.
 #     homepage: https://github.com/goliatone/lgr
 #     license: "MIT"
+#     test: |
+#       system "#{bin}/lgr -V"
+homebrew_casks:
+  - name: lgr
+    conflicts:
+      - formula: lgr
+    repository:
+      owner: goliatone
+      name: homebrew-tap
+      branch: master
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Casks
+    description: pretty output for terminal scripts.
+    homepage: https://github.com/goliatone/lgr
+    license: "MIT"
 
 nfpms:
   - id: lgr
