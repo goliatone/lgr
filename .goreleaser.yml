@@ -27,10 +27,12 @@ builds:
     main: "./main.go"
     binary: "lgr"
     ldflags:
-      - -s -w
-      - -X github.com/goliatone/lgr/pkg/version.Tag=v{{.Version}}
-      - -X github.com/goliatone/lgr/pkg/version.Time={{.Date}}
-      - -X github.com/goliatone/lgr/pkg/version.User=goliatone
+      - >-
+        -s -w
+        -X github.com/goliatone/lgr/pkg/version.Tag={{ .Version }}
+        -X github.com/goliatone/lgr/pkg/version.Time={{ .Date }}
+        -X github.com/goliatone/lgr/pkg/version.User=goreleaser
+        -X github.com/goliatone/lgr/pkg/version.Commit={{ .FullCommit }}
 
 universal_binaries:
   - id: lgr-universal
@@ -49,7 +51,7 @@ checksum:
   name_template: "checksums.txt"
 
 snapshot:
-  version_template: "{{ .Tag }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 
 changelog:
   sort: asc
@@ -59,30 +61,24 @@ changelog:
       - "^test:"
       - "^Update README"
       - "merge fix"
-brews:
+homebrew_casks:
   - name: lgr
+    binaries:
+      - lgr
     repository:
       owner: goliatone
       name: homebrew-tap
       branch: master
-      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    directory: Formula
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Casks
     description: pretty output for terminal scripts.
     homepage: https://github.com/goliatone/lgr
-    license: "MIT"
-    test: |
-      system "#{bin}/lgr -V"
-# homebrew_casks:
-#   - name: lgr
-#     repository:
-#       owner: goliatone
-#       name: homebrew-tap
-#       branch: master
-#       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-#     directory: Casks
-#     description: pretty output for terminal scripts.
-#     homepage: https://github.com/goliatone/lgr
-#     license: "MIT"
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/lgr"]
+          end
 
 nfpms:
   - id: lgr
