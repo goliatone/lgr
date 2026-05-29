@@ -61,4 +61,4 @@ jobs:
           args: release --clean --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HOMEBREW_TAP_TOKEN: ${{ secrets.GO_RELEASER_HOMEBREW_TAP }}
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.GO_RELEASER_HOMEBREW_TAP }}
