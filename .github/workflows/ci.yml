@@ -18,22 +18,22 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go: ["1.21"]
+        go: ["stable"]
     env:
       VERBOSE: 1
       GOFLAGS: -mod=readonly
       GOPROXY: https://proxy.golang.org
 
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: ${{ matrix.go }}
-
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ matrix.go }}
 
       - name: Run build
         run: ./taskfile ci:build
@@ -46,7 +46,7 @@ jobs:
 
       # snapshot release for non tag pushes, no artifacts published
       - name: Run snapshot release
-        if: startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest'
+        if: ${{ !startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest' }}
         uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
