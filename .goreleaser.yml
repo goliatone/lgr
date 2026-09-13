@@ -73,12 +73,14 @@ homebrew_casks:
     directory: Casks
     description: pretty output for terminal scripts.
     homepage: https://github.com/goliatone/lgr
-    hooks:
-      post:
-        install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/lgr"]
-          end
+    # Escape the Homebrew path token so GoReleaser leaves it for install time.
+    custom_block: |
+      postflight_steps do
+        on_macos do
+          run "/usr/bin/xattr",
+              args: ["-dr", "com.apple.quarantine", "{{ "{{staged_path}}" }}/lgr"]
+        end
+      end
 
 nfpms:
   - id: lgr
